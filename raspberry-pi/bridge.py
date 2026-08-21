@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """
-Raspberry Pi Home Automation MQTT <-> Firebase Bridge Daemon
------------------------------------------------------------
-This script acts as the master gateway on the Raspberry Pi:
-1. Connects to the local Mosquitto MQTT broker.
+==============================================================================
+⚡ ELECTROFIC — Raspberry Pi 24/7 Master Gateway Daemon
+MQTT <-> Firebase Realtime Database Bridge
+==============================================================================
+This daemon runs as a continuous systemd service on the Raspberry Pi:
+1. Connects to the local Mosquitto MQTT broker (Port 1883).
 2. Connects to Firebase Realtime Database using Firebase Admin SDK.
-3. Syncs device status from ESP32 nodes (MQTT) to Firebase (Cloud).
-4. Listens for web dashboard commands in Firebase and forwards them to ESP32 nodes via MQTT.
+3. Syncs device telemetry & sensor readings from ESP32 nodes into Firebase.
+4. Listens for web dashboard commands in Firebase and dispatches MQTT packets:
+   - Room point toggles & fan speed adjustments -> home/nodes/{node_id}/set
+   - Automation Scenes (All Off, Night Mode)    -> home/nodes/all/scene
+   - Water Pump Control                         -> home/nodes/water_pump/set
+==============================================================================
 """
 
 import json
@@ -28,25 +34,28 @@ logging.basicConfig(
 # --- CONFIGURATION ---
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
-MQTT_CLIENT_ID = "RPi_HomeAutomation_Gateway"
+MQTT_CLIENT_ID = "RPi_Electrofic_Gateway"
 
-# Topic structure: home/nodes/{node_id}/telemetry or home/nodes/{node_id}/set
+# Topic Subscriptions & Prefixes
 MQTT_TELEMETRY_TOPIC = "home/nodes/+/telemetry"
-MQTT_COMMAND_TOPIC_PREFIX = "home/nodes"
+MQTT_WATER_TELEMETRY = "home/water/telemetry"
+MQTT_COMMAND_PREFIX  = "home/nodes"
 
-# Resolve serviceAccountKey.json path relative to this script directory
+# Firebase Credentials Path
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CRED_PATH = os.path.join(SCRIPT_DIR, "serviceAccountKey.json")
 FIREBASE_CRED_PATH = os.getenv("FIREBASE_CRED_PATH", DEFAULT_CRED_PATH)
-FIREBASE_DATABASE_URL = os.getenv("FIREBASE_DATABASE_URL", "https://electrofic-homeautomation-default-rtdb.firebaseio.com")
+FIREBASE_DATABASE_URL = os.getenv(
+    "FIREBASE_DATABASE_URL",
+    "https://electrofic-homeautomation-default-rtdb.firebaseio.com"
+)
 
 # --- INITIALIZE FIREBASE ---
 def init_firebase():
     if not os.path.exists(FIREBASE_CRED_PATH):
         logging.warning(
-            f"Firebase service account file '{FIREBASE_CRED_PATH}' not found! "
-            "Running in simulation/mock mode for Firebase. "
-            "Please copy your 'serviceAccountKey.json' to this folder."
+            f"⚠️ Firebase service account key '{FIREBASE_CRED_PATH}' not found!\n"
+            "   Please place your 'serviceAccountKey.json' in the raspberry-pi folder."
         )
         return False
     
@@ -55,93 +64,134 @@ def init_firebase():
         firebase_admin.initialize_app(cred, {
             'databaseURL': FIREBASE_DATABASE_URL
         })
-        logging.info("Successfully connected to Firebase Realtime Database.")
+        logging.info("✅ Successfully authenticated with Firebase Realtime Database.")
         return True
     except Exception as e:
-        logging.error(f"Failed to initialize Firebase: {e}")
+        logging.error(f"❌ Failed to initialize Firebase: {e}")
         return False
 
 # --- MQTT CALLBACKS ---
 def on_connect(client, userdata, flags, rc, properties=None):
     is_success = (rc == 0) if isinstance(rc, int) else (not rc.is_failure)
     if is_success:
-        logging.info("Connected successfully to MQTT Broker.")
-        # Subscribe to all device telemetry topics
+        logging.info("✅ Connected successfully to local Mosquitto MQTT Broker.")
         client.subscribe(MQTT_TELEMETRY_TOPIC)
-        logging.info(f"Subscribed to topic: {MQTT_TELEMETRY_TOPIC}")
+        client.subscribe(MQTT_WATER_TELEMETRY)
+        logging.info(f"📡 Subscribed to topics: {MQTT_TELEMETRY_TOPIC}, {MQTT_WATER_TELEMETRY}")
     else:
-        logging.error(f"Failed to connect to MQTT Broker, code: {rc}")
+        logging.error(f"❌ Failed to connect to MQTT Broker, return code: {rc}")
 
 def on_message(client, userdata, msg):
     try:
         topic = msg.topic
         payload_str = msg.payload.decode("utf-8")
-        logging.info(f"MQTT Received [{topic}]: {payload_str}")
+        logging.info(f"[MQTT RECV] {topic}: {payload_str}")
 
-        # Extract node_id from topic: home/nodes/{node_id}/telemetry
+        try:
+            data = json.loads(payload_str)
+        except json.JSONDecodeError:
+            data = {"raw_value": payload_str}
+
+        data["last_seen"] = int(time.time())
+
+        if not userdata.get("firebase_enabled"):
+            return
+
+        # 1. Water System Telemetry
+        if "water" in topic:
+            water_ref = db.reference("water_system")
+            water_ref.update(data)
+            logging.info("💧 Updated /water_system telemetry in Firebase")
+            return
+
+        # 2. Node Telemetry (home/nodes/{node_id}/telemetry)
         parts = topic.split('/')
         if len(parts) >= 4:
             node_id = parts[2]
             
-            # Try parsing JSON payload
-            try:
-                data = json.loads(payload_str)
-            except json.JSONDecodeError:
-                data = {"raw_value": payload_str}
+            # Update node device telemetry
+            ref = db.reference(f"devices/{node_id}/telemetry")
+            ref.update(data)
+            
+            # Set online status
+            status_ref = db.reference(f"devices/{node_id}/status")
+            status_ref.set("online")
+            
+            # If environmental data exists, update /environment
+            if "temperature" in data or "humidity" in data:
+                env_update = {}
+                if "temperature" in data: env_update["temp"] = data["temperature"]
+                if "humidity" in data: env_update["humidity"] = data["humidity"]
+                db.reference("environment").update(env_update)
 
-            data["last_seen"] = int(time.time())
-
-            # Update Firebase Realtime DB at /devices/{node_id}
-            if userdata.get("firebase_enabled"):
-                ref = db.reference(f"devices/{node_id}/telemetry")
-                ref.update(data)
-                # Also set node status to online
-                status_ref = db.reference(f"devices/{node_id}/status")
-                status_ref.set("online")
-                logging.info(f"Updated Firebase for node: {node_id}")
+            logging.info(f"⚡ Synced telemetry to Firebase for room node: {node_id}")
 
     except Exception as e:
         logging.error(f"Error processing MQTT message: {e}")
 
 # --- FIREBASE COMMAND LISTENER ---
 def setup_firebase_listeners(mqtt_client):
-    """Listens for commands written by Web App into /commands branch in Firebase"""
+    """Listens for commands dispatched by the Web App in Firebase /commands"""
     def command_listener(event):
         try:
             if event.data is None:
                 return
             
-            # Event path structure e.g. /commands/{node_id}/{actuator} = value
-            path = event.path  # e.g., /living_room_relay/relay1
+            path = event.path  # e.g., /hall/h1, /scene, /water_pump
             data = event.data
             
-            logging.info(f"Firebase Command Event: path={path}, data={data}")
+            logging.info(f"[FIREBASE CMD] Path: {path} | Data: {data}")
             
             parts = [p for p in path.split('/') if p]
-            if len(parts) >= 1:
-                node_id = parts[0]
-                target_topic = f"{MQTT_COMMAND_TOPIC_PREFIX}/{node_id}/set"
-                
-                # Payload to send to ESP32
+            if not parts:
+                return
+
+            target = parts[0]
+
+            # 1. Global Scene Broadcast (ALL_OFF, NIGHT_MODE)
+            if target == "scene":
+                target_topic = f"{MQTT_COMMAND_PREFIX}/all/scene"
                 payload = json.dumps(data) if isinstance(data, dict) else str(data)
                 mqtt_client.publish(target_topic, payload, qos=1)
-                logging.info(f"Forwarded command to MQTT [{target_topic}]: {payload}")
+                logging.info(f"📢 Broadcasted Scene to MQTT [{target_topic}]: {payload}")
+                return
+
+            # 2. Water Motor Pump Command
+            if target == "water_pump":
+                target_topic = f"{MQTT_COMMAND_PREFIX}/water_pump/set"
+                payload = json.dumps(data) if isinstance(data, dict) else str(data)
+                mqtt_client.publish(target_topic, payload, qos=1)
+                logging.info(f"🚰 Dispatched Water Pump command [{target_topic}]: {payload}")
+                return
+
+            # 3. Room-Specific Point Toggles & Fan Speed
+            node_id = target
+            target_topic = f"{MQTT_COMMAND_PREFIX}/{node_id}/set"
+            
+            # Format payload for ESP32
+            payload = json.dumps(data) if isinstance(data, dict) else str(data)
+            mqtt_client.publish(target_topic, payload, qos=1)
+            logging.info(f"⚡ Dispatched Room Command to MQTT [{target_topic}]: {payload}")
                 
         except Exception as e:
-            logging.error(f"Error in Firebase listener: {e}")
+            logging.error(f"Error in Firebase command listener: {e}")
 
     try:
         cmd_ref = db.reference("commands")
         cmd_ref.listen(command_listener)
-        logging.info("Listening for incoming web commands on Firebase '/commands'")
+        logging.info("👂 Actively listening for web commands on Firebase '/commands'")
     except Exception as e:
-        logging.error(f"Failed to attach Firebase listener: {e}")
+        logging.error(f"Failed to attach Firebase command listener: {e}")
 
-# --- MAIN RUNNER ---
+# --- MAIN ENTRY POINT ---
 def main():
-    fb_enabled = init_firebase()
+    print("==========================================================")
+    print("   ⚡ ELECTROFIC — RASPBERRY PI MASTER GATEWAY DAEMON    ")
+    print("==========================================================")
 
+    fb_enabled = init_firebase()
     userdata = {"firebase_enabled": fb_enabled}
+
     try:
         mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=MQTT_CLIENT_ID, userdata=userdata)
     except AttributeError:
@@ -150,17 +200,21 @@ def main():
     mqtt_client.on_connect = on_connect
     mqtt_client.on_message = on_message
 
-    logging.info(f"Connecting to MQTT Broker at {MQTT_BROKER}:{MQTT_PORT}...")
+    logging.info(f"Connecting to Mosquitto Broker at {MQTT_BROKER}:{MQTT_PORT}...")
     try:
         mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
     except Exception as e:
-        logging.error(f"Could not connect to MQTT broker: {e}")
+        logging.error(f"❌ Could not connect to MQTT broker: {e}")
         sys.exit(1)
 
     if fb_enabled:
         setup_firebase_listeners(mqtt_client)
 
-    mqtt_client.loop_forever()
+    try:
+        mqtt_client.loop_forever()
+    except KeyboardInterrupt:
+        logging.info("Gateway daemon shutting down.")
+        mqtt_client.disconnect()
 
 if __name__ == "__main__":
     main()
