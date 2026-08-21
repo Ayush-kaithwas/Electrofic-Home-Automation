@@ -1,6 +1,6 @@
-# Master Setup & Deployment Guide: Custom RPi + ESP32 + Node.js Backend Smart Home
+# Master Setup & Deployment Guide: Custom RPi + ESP32 + Firebase Smart Home
 
-This guide walks you through building your custom home automation system using a **Raspberry Pi Master Hub**, **ESP32 Wi-Fi Nodes**, a **Node.js + SQLite REST & WebSocket Backend**, and a **Custom Glassmorphism Web Dashboard**.
+This guide walks you through setting up your smart home automation system using a **Raspberry Pi Master Hub**, **ESP32 Wi-Fi Nodes**, **Firebase Realtime Database & Hosting**, and the **Electrofic React PWA Web Dashboard**.
 
 ---
 
@@ -9,30 +9,30 @@ This guide walks you through building your custom home automation system using a
 ```
  ┌─────────────────────────────────────────────────────────────┐
  │                  ESP32 Microcontroller Node                 │
- │  - Connects to Wi-Fi                                        │
+ │  - Connects to Local Wi-Fi                                  │
  │  - Controls Relays (Lights, Fan, AC, Appliances)            │
  │  - Reads Sensors (Temperature, Humidity, Motion)            │
  └──────────────────────────────┬──────────────────────────────┘
-                                │ (Local Wi-Fi / MQTT Protocol)
+                                │ (Local MQTT Protocol)
                                 ▼
  ┌─────────────────────────────────────────────────────────────┐
  │                  Raspberry Pi Master Gateway                │
  │  - Mosquitto MQTT Broker (Port 1883)                        │
- │  - Python Bridge Daemon (`node_backend_bridge.py`)          │
- │  - Systemd Service (`home-automation-node-bridge.service`)  │
+ │  - Python Bridge Daemon (`bridge.py`)                       │
+ │  - Systemd Service (`home-automation-bridge.service`)       │
  └──────────────────────────────┬──────────────────────────────┘
-                                │ (HTTP REST API / WebSockets)
+                                │ (Realtime Cloud Sync)
                                 ▼
  ┌─────────────────────────────────────────────────────────────┐
- │                   Node.js Backend & Database                │
- │  - Express REST API & WebSockets (Port 5000)                │
- │  - SQLite Database (`aurahome.db`)                          │
+ │            Firebase Cloud (Hosting & Realtime DB)           │
+ │  - Firebase Realtime Database (Live Telemetry & Controls)   │
+ │  - Firebase Hosting (Global PWA Access)                     │
  └──────────────────────────────┬──────────────────────────────┘
-                                │ (HTTP / WebSockets)
+                                │ (PWA WebSockets / HTTPS)
                                 ▼
  ┌─────────────────────────────────────────────────────────────┐
- │                   Custom Web Control Dashboard              │
- │  - Glassmorphic UI (Port 8000)                              │
+ │             Electrofic React PWA Dashboard                  │
+ │  - Multi-floor Switchboards, Water Monitoring, & Telemetry  │
  │  - Works on Mobile Phone, Tablet & Desktop Browsers         │
  └─────────────────────────────────────────────────────────────┘
 ```
@@ -84,19 +84,17 @@ sudo systemctl restart mosquitto
    cd /home/pi/home-automation/raspberry-pi
    pip3 install -r requirements.txt
    ```
-4. Configure Node.js backend URL (in `home-automation-node-bridge.service` or environment variable):
-   - If backend runs on RPi: `NODE_BACKEND_URL=http://localhost:5000`
-   - If backend runs on your PC: `NODE_BACKEND_URL=http://<YOUR_PC_IP>:5000`
+4. Place `serviceAccountKey.json` from Firebase into `/home/pi/home-automation/raspberry-pi/`.
 5. Enable Systemd Service on Raspberry Pi:
    ```bash
-   sudo cp home-automation-node-bridge.service /etc/systemd/system/
+   sudo cp home-automation-bridge.service /etc/systemd/system/
    sudo systemctl daemon-reload
-   sudo systemctl enable home-automation-node-bridge
-   sudo systemctl start home-automation-node-bridge
+   sudo systemctl enable home-automation-bridge
+   sudo systemctl start home-automation-bridge
    ```
 6. Check service status:
    ```bash
-   sudo systemctl status home-automation-node-bridge
+   sudo systemctl status home-automation-bridge
    ```
 
 ---
@@ -104,7 +102,7 @@ sudo systemctl restart mosquitto
 ## ⚡ Step 2: Flash ESP32 Microcontroller Nodes
 
 ### 2.1 Hardware Connections
-Connect an ESP32 board to a **4-Channel 5V Relay Module** (powered externally or via 5V pin):
+Connect an ESP32 board to a **4-Channel 5V Relay Module**:
 - `VCC` -> ESP32 5V (or Vin)
 - `GND` -> ESP32 GND
 - `IN1` -> ESP32 GPIO 25 (Relay 1 - Light)
@@ -133,14 +131,11 @@ Connect an ESP32 board to a **4-Channel 5V Relay Module** (powered externally or
 
 ---
 
-## 🔥 Step 3: Firebase Cloud Project Setup
+## 🔥 Step 3: Firebase Realtime Database Setup
 
 1. Go to [Firebase Console](https://console.firebase.google.com/).
-2. Click **Add project** and name it (e.g. `AuraHome-Automation`).
-3. Under **Build**, select **Realtime Database**:
-   - Create Database in standard location.
-   - Start in **Test Mode** (or configure security rules below).
-4. **Security Rules** for Realtime Database:
+2. Under project `electrofic-homeautomation`, select **Realtime Database**.
+3. **Security Rules** for Realtime Database:
    ```json
    {
      "rules": {
@@ -149,28 +144,21 @@ Connect an ESP32 board to a **4-Channel 5V Relay Module** (powered externally or
      }
    }
    ```
-5. Obtain Service Account Key for RPi:
+4. Obtain Service Account Key for RPi:
    - Go to **Project Settings** -> **Service Accounts**.
    - Click **Generate new private key**.
-   - Save file as `serviceAccountKey.json` and upload to your Raspberry Pi.
-6. Obtain Web Config for Web Dashboard:
-   - Go to **Project Settings** -> **General** -> **Your apps** -> Click `</>` (Web).
-   - Copy `firebaseConfig` keys into `web-dashboard/app.js`.
+   - Save file as `serviceAccountKey.json` and upload to your Raspberry Pi `raspberry-pi/` directory.
 
 ---
 
-## 🌐 Step 4: Web Dashboard Deployment
+## 🌐 Step 4: Web Dashboard & Automatic Deployment
 
-### Viewing Locally
-Simply open `web-dashboard/index.html` in any web browser (Chrome, Firefox, Edge, Safari).
-If unconfigured with Firebase keys, it automatically runs in **Interactive Demo Mode** where you can click switches, trigger automation scenes, and test the glassmorphic UI.
-
-### Deploying to Firebase Hosting (Optional - Free Remote Access)
+### Local Development
 ```bash
-npm install -g firebase-tools
-firebase login
 cd web-dashboard
-firebase init hosting
-firebase deploy
+python serve-app.py
 ```
-Now you can control your appliances remotely from anywhere in the world using your smartphone or laptop!
+Open `http://localhost:8080` in your browser.
+
+### Automatic GitHub Actions Deployment
+Whenever you push changes to the `main` branch, GitHub Actions will automatically deploy the latest dashboard to **Firebase Hosting** at `https://electrofic-homeautomation.web.app/`.
