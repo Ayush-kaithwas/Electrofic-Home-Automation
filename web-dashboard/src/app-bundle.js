@@ -620,7 +620,7 @@ function ActivityLog({ logs }) {
 
 // 12.5 LOGIN / AUTHENTICATION COMPONENT (Strict Admin Sign-In)
 function LoginScreen({ onLoginSuccess }) {
-  const [email, setEmail] = useState("ayushharrysudha@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
@@ -673,7 +673,7 @@ function LoginScreen({ onLoginSuccess }) {
             e("input", {
               type: "email",
               className: "auth-input",
-              placeholder: "ayushharrysudha@gmail.com",
+              placeholder: "admin@example.com",
               required: true,
               value: email,
               onChange: (evt) => setEmail(evt.target.value),

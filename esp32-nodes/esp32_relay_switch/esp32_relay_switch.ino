@@ -9,25 +9,26 @@
  * - ArduinoJson (by Benoit Blanchon)
  */
 
-#include <WiFi.h>
-#include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <PubSubClient.h>
+#include <WiFi.h>
+
 
 // --- CONFIGURATION ---
-const char* WIFI_SSID = "LanosK";
-const char* WIFI_PASSWORD = "123456789x";
+const char *WIFI_SSID = "YOUR_WIFI_SSID";
+const char *WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
 // IP Address of your Raspberry Pi running Mosquitto MQTT Broker
-const char* MQTT_SERVER = "192.168.1.100"; 
-const int   MQTT_PORT   = 1883;
+const char *MQTT_SERVER = "192.168.1.100";
+const int MQTT_PORT = 1883;
 
 // Unique Identifier for this ESP32 Node
-const char* NODE_ID = "living_room_node";
+const char *NODE_ID = "living_room_node";
 
 // Topic definitions
 // Subscribes to: home/nodes/living_room_node/set
 // Publishes to:  home/nodes/living_room_node/telemetry
-String topicSet       = String("home/nodes/") + NODE_ID + "/set";
+String topicSet = String("home/nodes/") + NODE_ID + "/set";
 String topicTelemetry = String("home/nodes/") + NODE_ID + "/telemetry";
 
 // GPIO Pin mappings for Relays / Appliances
@@ -37,7 +38,7 @@ const int RELAY_3_PIN = 27; // Appliance 3 (e.g. Light 2)
 const int RELAY_4_PIN = 14; // Appliance 4 (e.g. AC / Socket)
 
 // Relay state variables (Active Low or Active High depending on relay module)
-#define RELAY_ON  LOW
+#define RELAY_ON LOW
 #define RELAY_OFF HIGH
 
 bool relay1State = false;
@@ -89,7 +90,7 @@ void publishTelemetry() {
   doc["node_id"] = NODE_ID;
   doc["ip"] = WiFi.localIP().toString();
   doc["rssi"] = WiFi.RSSI();
-  
+
   doc["relays"]["relay1"] = relay1State;
   doc["relays"]["relay2"] = relay2State;
   doc["relays"]["relay3"] = relay3State;
@@ -107,7 +108,7 @@ void applyRelayState(int pin, bool state) {
   digitalWrite(pin, state ? RELAY_ON : RELAY_OFF);
 }
 
-void mqttCallback(char* topic, byte* message, unsigned int length) {
+void mqttCallback(char *topic, byte *message, unsigned int length) {
   String messageStr = "";
   for (unsigned int i = 0; i < length; i++) {
     messageStr += (char)message[i];
@@ -141,8 +142,13 @@ void mqttCallback(char* topic, byte* message, unsigned int length) {
     }
   } else {
     // Handle simple text commands e.g. "RELAY1_ON"
-    if (messageStr == "RELAY1_ON") { relay1State = true; applyRelayState(RELAY_1_PIN, true); }
-    else if (messageStr == "RELAY1_OFF") { relay1State = false; applyRelayState(RELAY_1_PIN, false); }
+    if (messageStr == "RELAY1_ON") {
+      relay1State = true;
+      applyRelayState(RELAY_1_PIN, true);
+    } else if (messageStr == "RELAY1_OFF") {
+      relay1State = false;
+      applyRelayState(RELAY_1_PIN, false);
+    }
   }
 
   // Immediately report updated state back
@@ -152,14 +158,14 @@ void mqttCallback(char* topic, byte* message, unsigned int length) {
 void reconnectMQTT() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection to RPi Gateway...");
-    
+
     if (client.connect(NODE_ID)) {
       Serial.println(" Connected!");
       // Subscribe to command topic
       client.subscribe(topicSet.c_str());
       Serial.print("Subscribed to: ");
       Serial.println(topicSet);
-      
+
       // Publish initial state
       publishTelemetry();
     } else {
