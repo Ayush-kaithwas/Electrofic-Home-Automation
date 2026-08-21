@@ -1,0 +1,78 @@
+{
+  "boards": {
+    "hall": {
+      "id": "hall",
+      "name": "Hall Switchboard",
+      "floor": "Ground Floor",
+      "switches": {
+        "fan": { "id": "h_fan", "name": "Main Fan", "type": "fan", "state": true, "speed": 3 },
+        "light": { "id": "h_light", "name": "Main Light", "type": "light", "state": true },
+        "chandelier": { "id": "h_chandelier", "name": "Decorative Chandelier", "type": "chandelier", "state": false }
+      }
+    },
+    "first_floor": {
+      "id": "first_floor",
+      "name": "First Floor Room",
+      "floor": "1st Floor",
+      "switches": {
+        "night_bulb": { "id": "f_night_bulb", "name": "Night Lamp", "type": "light", "state": true },
+        "fan": { "id": "f_fan", "name": "Fan", "type": "fan", "state": true, "speed": 3 },
+        "light": { "id": "f_light", "name": "Room Light", "type": "light", "state": false },
+        "chandelier": { "id": "f_chandelier", "name": "Room Chandelier", "type": "chandelier", "state": false }
+      }
+    },
+    "harry": {
+      "id": "harry",
+      "name": "Harry Room",
+      "floor": "2nd Floor",
+      "switches": {
+        "night_bulb": { "id": "hr_night_bulb", "name": "Night Bulb", "type": "light", "state": true },
+        "fan": { "id": "hr_fan", "name": "Ceiling Fan", "type": "fan", "state": true, "speed": 4 },
+        "light": { "id": "hr_light", "name": "Study Light", "type": "light", "state": true }
+      }
+    },
+    "mom_dad": {
+      "id": "mom_dad",
+      "name": "Mom and Dad Room",
+      "floor": "1st Floor",
+      "switches": {
+        "smart_light": { "id": "md_smart_light", "name": "Smart Light", "type": "light", "state": true },
+        "fan": { "id": "md_fan", "name": "Master Bed Fan", "type": "fan", "state": false },
+        "light": { "id": "md_light", "name": "Ambient Light", "type": "light", "state": true },
+        "chandelier": { "id": "md_chandelier", "name": "Chandelier", "type": "chandelier", "state": false }
+      }
+    },
+    "ayush": {
+      "id": "ayush",
+      "name": "Ayush Room",
+      "floor": "2nd Floor",
+      "switches": {
+        "fan_main": { "id": "ay_fan_main", "name": "Main Fan", "type": "fan", "state": true, "speed": 5 },
+        "light_main": { "id": "ay_light_main", "name": "Main Light", "type": "light", "state": true },
+        "night_bulb": { "id": "ay_night_bulb", "name": "Night Lamp", "type": "light", "state": false },
+        "fan_secondary": { "id": "ay_fan_secondary", "name": "Secondary Fan", "type": "fan", "state": false },
+        "centre_light": { "id": "ay_centre_light", "name": "Centre Light", "type": "light", "state": true }
+      }
+    }
+  },
+  "water_system": {
+    "levelPercent": 78,
+    "volumeLitres": 780,
+    "maxCapacity": 1000,
+    "inflowRate": 18.5,
+    "outflowRate": 4.2,
+    "pH": 7.2,
+    "tdsPpm": 142,
+    "pumpActive": true,
+    "autoMode": true
+  },
+  "environment": {
+    "temp": 26.5,
+    "humidity": 58,
+    "airQuality": "Good",
+    "aqi": 42,
+    "co2": 420,
+    "powerUsage": 1.45
+  },
+  "commands": {}
+}

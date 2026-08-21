@@ -1,0 +1,14 @@
+{
+  "name": "aurahome-react-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "python serve-app.py",
+    "start": "python serve-app.py"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

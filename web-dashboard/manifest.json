@@ -1,0 +1,43 @@
+{
+  "name": "AuraHome — Smart Home Control",
+  "short_name": "AuraHome",
+  "description": "Next-Gen Smart Home Control Center — Water, Climate, Electricity & Floor Switchboards",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070A12",
+  "theme_color": "#06b6d4",
+  "lang": "en-IN",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Switchboards",
+      "short_name": "Switches",
+      "description": "Control floor switchboards",
+      "url": "/?tab=switchboards",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Water Monitor",
+      "short_name": "Water",
+      "description": "Monitor water tank levels",
+      "url": "/?tab=water",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

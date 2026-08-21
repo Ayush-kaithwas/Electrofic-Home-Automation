@@ -1,0 +1,18 @@
+[Unit]
+Description=Raspberry Pi Home Automation MQTT-Firebase Gateway
+After=network.target mosquitto.service
+Wants=mosquitto.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/TestHomeAutomation/raspberry-pi
+ExecStart=/usr/bin/python3 /home/pi/TestHomeAutomation/raspberry-pi/bridge.py
+Restart=always
+RestartSec=5
+Environment=MQTT_BROKER=localhost
+Environment=FIREBASE_CRED_PATH=/home/pi/TestHomeAutomation/raspberry-pi/serviceAccountKey.json
+Environment=FIREBASE_DATABASE_URL=https://electrofic-homeautomation-default-rtdb.firebaseio.com
+
+[Install]
+WantedBy=multi-user.target
