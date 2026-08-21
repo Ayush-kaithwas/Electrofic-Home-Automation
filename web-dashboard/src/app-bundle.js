@@ -100,7 +100,10 @@ const INITIAL_ESP_NODES = [
 ];
 
 // 2. SIDEBAR COMPONENT
-function Sidebar({ activeTab, setActiveTab }) {
+function Sidebar({ activeTab, setActiveTab, espNodes, fbConnected }) {
+  const onlineCount = (espNodes || []).filter(n => n.online).length;
+  const isHwOnline = onlineCount > 0;
+
   return e("aside", { className: "sidebar" },
     e("div", null,
       e("div", { className: "brand" },
@@ -127,17 +130,17 @@ function Sidebar({ activeTab, setActiveTab }) {
     ),
     e("div", { className: "gateway-status-card" },
       e("div", { className: "status-header" },
-        e("span", { className: "status-dot online" }),
-        e("span", { className: "status-title" }, "System Online")
+        e("span", { className: `status-dot ${isHwOnline ? 'online' : 'offline'}` }),
+        e("span", { className: "status-title" }, isHwOnline ? "Hardware Active" : "Hardware Standby")
       ),
-      e("div", { className: "status-sub" }, e("span", null, "RPi Node:"), e("strong", null, "192.168.1.100")),
-      e("div", { className: "status-sub" }, e("span", null, "Sync:"), e("strong", null, "Realtime DB"))
+      e("div", { className: "status-sub" }, e("span", null, "ESP Nodes:"), e("strong", null, `${onlineCount}/5 Online`)),
+      e("div", { className: "status-sub" }, e("span", null, "Cloud Sync:"), e("strong", null, fbConnected ? "Firebase Live" : "Local Mode"))
     )
   );
 }
 
 // 3. MOBILE HEADER COMPONENT (PWA-ready — brand + install + logout + status)
-function MobileHeader({ installPromptEvent, onInstallClick, currentUser, onLogout }) {
+function MobileHeader({ installPromptEvent, onInstallClick, currentUser, onLogout, fbConnected }) {
   return e("header", { className: "mobile-header" },
     e("div", { className: "mobile-brand" },
       e("div", { className: "mobile-brand-logo" }, e("i", { className: "fa-solid fa-house-signal" })),
@@ -163,7 +166,7 @@ function MobileHeader({ installPromptEvent, onInstallClick, currentUser, onLogou
       },
         e("i", { className: "fa-solid fa-right-from-bracket" })
       ),
-      e("span", { className: "mobile-status-dot", title: "Connected" })
+      e("span", { className: `mobile-status-dot ${fbConnected ? 'online' : ''}`, title: fbConnected ? "Firebase Connected" : "Local Standby" })
     )
   );
 }
@@ -1066,9 +1069,9 @@ function App() {
 
   return e("div", { className: "app-container" },
     // Desktop sidebar
-    e(Sidebar, { activeTab, setActiveTab }),
+    e(Sidebar, { activeTab, setActiveTab, espNodes, fbConnected }),
     // Mobile top bar (no hamburger — navigation moved to bottom nav)
-    e(MobileHeader, { installPromptEvent, onInstallClick: handleInstallClick, currentUser, onLogout: handleLogout }),
+    e(MobileHeader, { installPromptEvent, onInstallClick: handleInstallClick, currentUser, onLogout: handleLogout, fbConnected }),
     // Bottom navigation bar (mobile + tablet only, shown via CSS)
     e(BottomNav, { activeTab, setActiveTab }),
     // Main content
