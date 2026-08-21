@@ -909,6 +909,19 @@ function App() {
           });
         });
       });
+
+      // 6. Real-time Electricity Meter Sync
+      const elecRef = firebaseDb.ref('electricity');
+      elecRef.on('value', (snap) => {
+        const data = snap.val();
+        if (data) {
+          setElecData(prev => ({
+            ...prev,
+            ...data,
+            hourlyLoad: data.hourlyLoad || prev.hourlyLoad
+          }));
+        }
+      });
     }
   }, []);
 

@@ -37,9 +37,10 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
 MQTT_CLIENT_ID = "RPi_Electrofic_Gateway"
 
 # Topic Subscriptions & Prefixes
-MQTT_TELEMETRY_TOPIC = "home/nodes/+/telemetry"
-MQTT_WATER_TELEMETRY = "home/water/telemetry"
-MQTT_COMMAND_PREFIX  = "home/nodes"
+MQTT_TELEMETRY_TOPIC  = "home/nodes/+/telemetry"
+MQTT_WATER_TELEMETRY  = "home/water/telemetry"
+MQTT_ENERGY_TELEMETRY = "home/electricity/telemetry"
+MQTT_COMMAND_PREFIX   = "home/nodes"
 
 # Firebase Credentials Path
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -77,7 +78,9 @@ def on_connect(client, userdata, flags, rc, properties=None):
         logging.info("✅ Connected successfully to local Mosquitto MQTT Broker.")
         client.subscribe(MQTT_TELEMETRY_TOPIC)
         client.subscribe(MQTT_WATER_TELEMETRY)
-        logging.info(f"📡 Subscribed to topics: {MQTT_TELEMETRY_TOPIC}, {MQTT_WATER_TELEMETRY}")
+        client.subscribe(MQTT_ENERGY_TELEMETRY)
+        client.subscribe("home/energy/telemetry")
+        logging.info(f"📡 Subscribed to topics: {MQTT_TELEMETRY_TOPIC}, {MQTT_WATER_TELEMETRY}, {MQTT_ENERGY_TELEMETRY}")
     else:
         logging.error(f"❌ Failed to connect to MQTT Broker, return code: {rc}")
 
@@ -102,6 +105,13 @@ def on_message(client, userdata, msg):
             water_ref = db.reference("water_system")
             water_ref.update(data)
             logging.info("💧 Updated /water_system telemetry in Firebase")
+            return
+
+        # 1b. Electricity / Energy Telemetry
+        if "electricity" in topic or "energy" in topic:
+            elec_ref = db.reference("electricity")
+            elec_ref.update(data)
+            logging.info("⚡ Updated /electricity telemetry in Firebase")
             return
 
         # 2. Node Telemetry (home/nodes/{node_id}/telemetry)

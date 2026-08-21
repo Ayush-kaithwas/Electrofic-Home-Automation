@@ -72,8 +72,17 @@
     "humidity": 0,
     "airQuality": "Standby",
     "aqi": 0,
+    "pm25": 0,
+    "pm10": 0,
     "co2": 0,
     "powerUsage": 0.0
+  },
+  "electricity": {
+    "liveWatts": 0,
+    "todayKwh": 0.0,
+    "monthlyKwh": 0.0,
+    "tariffRateRupees": 7.50,
+    "hourlyLoad": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   },
   "devices": {
     "hall": { "status": "offline", "room": "Hall (Ground Floor)" },
