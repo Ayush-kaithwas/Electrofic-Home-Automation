@@ -637,8 +637,8 @@ body {
  * DASHBOARD GRID (Fluid Flexible Layout)
  * ---------------------------------------------------------------- */
 .dashboard-grid {
-  display: flex;
-  flex-direction: column;
+  /* display: grid; */
+  grid-template-columns: repeat(12, 1fr);
   gap: var(--space-lg);
   width: 100%;
 }
