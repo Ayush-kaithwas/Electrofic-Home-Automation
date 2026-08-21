@@ -26,9 +26,9 @@ window.WaterMonitoring = function WaterMonitoring({ waterData, setWaterData, add
         <div className="water-details-grid">
           <div className="water-stat-box">
             <div className="water-stat-lbl">
-              <i className="fa-solid fa-arrows-up-to-line"></i> Water Depth
+              <i className="fa-solid fa-clock"></i> Filling Time
             </div>
-            <div className="water-stat-val">{waterData.depthMeters} m / {waterData.maxDepth} m</div>
+            <div className="water-stat-val">{waterData.fillingTimeMin} min</div>
           </div>
 
           <div className="water-stat-box">
@@ -40,16 +40,16 @@ window.WaterMonitoring = function WaterMonitoring({ waterData, setWaterData, add
 
           <div className="water-stat-box">
             <div className="water-stat-lbl">
-              <i className="fa-solid fa-flask"></i> Water Purity (pH)
+              <i className="fa-solid fa-bolt"></i> Units Consumed
             </div>
-            <div className="water-stat-val">{waterData.pH} (Optimal)</div>
+            <div className="water-stat-val">{waterData.unitsConsumed} kWh</div>
           </div>
 
           <div className="water-stat-box">
             <div className="water-stat-lbl">
-              <i className="fa-solid fa-filter"></i> TDS Level
+              <i className="fa-solid fa-rotate"></i> Runtime / Day
             </div>
-            <div className="water-stat-val">{waterData.tdsPpm} ppm (Pure)</div>
+            <div className="water-stat-val">{waterData.runtimePerDay} cycles</div>
           </div>
         </div>
       </div>

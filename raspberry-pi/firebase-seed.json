@@ -60,10 +60,10 @@
     "levelPercent": 0,
     "volumeLitres": 0,
     "maxCapacity": 1000,
+    "fillingTimeMin": 0,
     "inflowRate": 0.0,
-    "outflowRate": 0.0,
-    "pH": 0.0,
-    "tdsPpm": 0,
+    "unitsConsumed": 0,
+    "runtimePerDay": 0,
     "pumpActive": false,
     "autoMode": false
   },
