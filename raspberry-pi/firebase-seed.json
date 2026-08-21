@@ -74,5 +74,12 @@
     "co2": 420,
     "powerUsage": 1.45
   },
+  "devices": {
+    "hall": { "status": "offline", "room": "Hall (Ground Floor)" },
+    "first_floor": { "status": "offline", "room": "First Floor Room" },
+    "harry": { "status": "offline", "room": "Harry Room" },
+    "mom_dad": { "status": "offline", "room": "Mom & Dad Room" },
+    "ayush": { "status": "offline", "room": "Ayush Room" }
+  },
   "commands": {}
 }

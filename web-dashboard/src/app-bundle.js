@@ -90,13 +90,13 @@ const INITIAL_BOARDS = {
   }
 };
 
-// 1b. ESP NODE STATUS (one ESP32 per room — will sync from Firebase/cloud)
+// 1b. ESP NODE STATUS (one ESP32 per room — will sync live from Firebase/cloud)
 const INITIAL_ESP_NODES = [
-  { id: "hall", espId: "ESP32-GF-01", name: "Hall Switchboard", floor: "Ground Floor", online: true, ip: "192.168.1.101", lastSeen: "Just now", boardKey: "hall" },
-  { id: "first_floor", espId: "ESP32-FF-01", name: "First Floor Room", floor: "1st Floor", online: true, ip: "192.168.1.102", lastSeen: "Just now", boardKey: "first_floor" },
-  { id: "harry", espId: "ESP32-SF-01", name: "Harry Room", floor: "2nd Floor", online: false, ip: "—", lastSeen: "14 min ago", boardKey: "harry" },
-  { id: "mom_dad", espId: "ESP32-FF-02", name: "Mom & Dad Room", floor: "1st Floor", online: true, ip: "192.168.1.104", lastSeen: "Just now", boardKey: "mom_dad" },
-  { id: "ayush", espId: "ESP32-SF-02", name: "Ayush Room", floor: "2nd Floor", online: true, ip: "192.168.1.105", lastSeen: "Just now", boardKey: "ayush" },
+  { id: "hall", espId: "ESP32-GF-01", name: "Hall Switchboard", floor: "Ground Floor", online: false, ip: "—", lastSeen: "Offline", boardKey: "hall" },
+  { id: "first_floor", espId: "ESP32-FF-01", name: "First Floor Room", floor: "1st Floor", online: false, ip: "—", lastSeen: "Offline", boardKey: "first_floor" },
+  { id: "harry", espId: "ESP32-SF-01", name: "Harry Room", floor: "2nd Floor", online: false, ip: "—", lastSeen: "Offline", boardKey: "harry" },
+  { id: "mom_dad", espId: "ESP32-FF-02", name: "Mom & Dad Room", floor: "1st Floor", online: false, ip: "—", lastSeen: "Offline", boardKey: "mom_dad" },
+  { id: "ayush", espId: "ESP32-SF-02", name: "Ayush Room", floor: "2nd Floor", online: false, ip: "—", lastSeen: "Offline", boardKey: "ayush" },
 ];
 
 // 2. SIDEBAR COMPONENT
@@ -519,12 +519,6 @@ function ESPStatusBoard({ espNodes, boards, setActiveTab, setSelectedFloor }) {
   const [shakeId, setShakeId] = useState(null);
 
   const handleCardClick = (node) => {
-    if (!node.online) {
-      // Shake animation to show it's blocked
-      setShakeId(node.id);
-      setTimeout(() => setShakeId(null), 600);
-      return;
-    }
     setSelectedFloor(node.boardKey);
     setActiveTab('switchboards');
   };
@@ -886,24 +880,31 @@ function App() {
       // 5. Real-time ESP32 Node Status
       const devicesRef = firebaseDb.ref('devices');
       devicesRef.on('value', (snap) => {
-        const data = snap.val();
-        if (data) {
-          setEspNodes(prev => {
-            return prev.map(node => {
-              const fbDev = data[node.id];
-              if (fbDev) {
-                return {
-                  ...node,
-                  online: fbDev.status === 'online',
-                  ip: (fbDev.telemetry && fbDev.telemetry.ip) || node.ip,
-                  rssi: (fbDev.telemetry && fbDev.telemetry.rssi) || node.rssi,
-                  lastSeen: fbDev.telemetry && fbDev.telemetry.last_seen ? 'Just now' : node.lastSeen
-                };
-              }
-              return node;
-            });
+        const data = snap.val() || {};
+        const nowSec = Math.floor(Date.now() / 1000);
+        setEspNodes(prev => {
+          return prev.map(node => {
+            const fbDev = data[node.id];
+            if (fbDev && fbDev.status === 'online') {
+              const lastSeenSec = (fbDev.telemetry && fbDev.telemetry.last_seen) || 0;
+              const isRecent = lastSeenSec > 0 && (nowSec - lastSeenSec) < 60;
+              return {
+                ...node,
+                online: isRecent,
+                ip: (fbDev.telemetry && fbDev.telemetry.ip) || "—",
+                rssi: (fbDev.telemetry && fbDev.telemetry.rssi) || null,
+                lastSeen: isRecent ? 'Just now' : (lastSeenSec > 0 ? 'Disconnected' : 'Offline')
+              };
+            }
+            return {
+              ...node,
+              online: false,
+              ip: "—",
+              rssi: null,
+              lastSeen: 'Offline'
+            };
           });
-        }
+        });
       });
     }
   }, []);
