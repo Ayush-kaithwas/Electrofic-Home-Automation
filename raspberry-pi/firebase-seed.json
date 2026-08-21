@@ -4,75 +4,76 @@
       "id": "hall",
       "name": "Hall Switchboard",
       "floor": "Ground Floor",
-      "switches": {
-        "fan": { "id": "h_fan", "name": "Main Fan", "type": "fan", "state": true, "speed": 3 },
-        "light": { "id": "h_light", "name": "Main Light", "type": "light", "state": true },
-        "chandelier": { "id": "h_chandelier", "name": "Decorative Chandelier", "type": "chandelier", "state": false }
-      }
+      "points": [
+        { "id": "h1", "num": 1, "name": "FAN", "desc": "Controls Main Hall Fan", "icon": "fa-fan", "type": "fan", "state": false },
+        { "id": "h2", "num": 2, "name": "LIGHT", "desc": "Controls Hall Main Light", "icon": "fa-lightbulb", "type": "light", "state": false },
+        { "id": "h4", "num": 4, "name": "CHANDELIER", "desc": "Controls Decorative Chandelier", "icon": "fa-gem", "type": "chandelier", "state": false }
+      ]
     },
     "first_floor": {
       "id": "first_floor",
       "name": "First Floor Room",
       "floor": "1st Floor",
-      "switches": {
-        "night_bulb": { "id": "f_night_bulb", "name": "Night Lamp", "type": "light", "state": true },
-        "fan": { "id": "f_fan", "name": "Fan", "type": "fan", "state": true, "speed": 3 },
-        "light": { "id": "f_light", "name": "Room Light", "type": "light", "state": false },
-        "chandelier": { "id": "f_chandelier", "name": "Room Chandelier", "type": "chandelier", "state": false }
-      }
+      "points": [
+        { "id": "f2", "num": 2, "name": "NIGHT BULB", "desc": "Controls Night Lamp", "icon": "fa-moon", "type": "light", "state": false },
+        { "id": "f4", "num": 4, "name": "FAN (Regulator)", "desc": "Controls Fan Speed", "icon": "fa-fan", "type": "fan", "state": false, "hasRegulator": true, "speed": 0 },
+        { "id": "f5", "num": 5, "name": "LIGHT", "desc": "Controls Room Light", "icon": "fa-lightbulb", "type": "light", "state": false },
+        { "id": "f6", "num": 6, "name": "CHANDELIER", "desc": "Controls Room Chandelier", "icon": "fa-gem", "type": "chandelier", "state": false }
+      ]
     },
     "harry": {
       "id": "harry",
       "name": "Harry Room",
       "floor": "2nd Floor",
-      "switches": {
-        "night_bulb": { "id": "hr_night_bulb", "name": "Night Bulb", "type": "light", "state": true },
-        "fan": { "id": "hr_fan", "name": "Ceiling Fan", "type": "fan", "state": true, "speed": 4 },
-        "light": { "id": "hr_light", "name": "Study Light", "type": "light", "state": true }
-      }
+      "points": [
+        { "id": "hr3", "num": 3, "name": "NIGHT BULB", "desc": "Controls Night Bulb", "icon": "fa-moon", "type": "light", "state": false },
+        { "id": "hr4", "num": 4, "name": "FAN", "desc": "Controls Ceiling Fan", "icon": "fa-fan", "type": "fan", "state": false },
+        { "id": "hr5", "num": 5, "name": "LIGHT", "desc": "Controls Study Light", "icon": "fa-lightbulb", "type": "light", "state": false },
+        { "id": "hr6", "num": 6, "name": "FAN REGULATOR", "desc": "Controls Fan Speed", "icon": "fa-sliders", "type": "regulator", "state": false, "hasRegulator": true, "speed": 0 }
+      ]
     },
     "mom_dad": {
       "id": "mom_dad",
       "name": "Mom and Dad Room",
       "floor": "1st Floor",
-      "switches": {
-        "smart_light": { "id": "md_smart_light", "name": "Smart Light", "type": "light", "state": true },
-        "fan": { "id": "md_fan", "name": "Master Bed Fan", "type": "fan", "state": false },
-        "light": { "id": "md_light", "name": "Ambient Light", "type": "light", "state": true },
-        "chandelier": { "id": "md_chandelier", "name": "Chandelier", "type": "chandelier", "state": false }
-      }
+      "points": [
+        { "id": "md2", "num": 2, "name": "SMART LIGHT", "desc": "Controls RGB Smart Light", "icon": "fa-wand-magic-sparkles", "type": "light", "state": false },
+        { "id": "md4", "num": 4, "name": "FAN", "desc": "Controls Master Bed Fan", "icon": "fa-fan", "type": "fan", "state": false },
+        { "id": "md5", "num": 5, "name": "LIGHT", "desc": "Controls Ambient Light", "icon": "fa-lightbulb", "type": "light", "state": false },
+        { "id": "md6", "num": 6, "name": "CHANDELIER", "desc": "Controls Chandelier", "icon": "fa-gem", "type": "chandelier", "state": false }
+      ]
     },
     "ayush": {
       "id": "ayush",
       "name": "Ayush Room",
       "floor": "2nd Floor",
-      "switches": {
-        "fan_main": { "id": "ay_fan_main", "name": "Main Fan", "type": "fan", "state": true, "speed": 5 },
-        "light_main": { "id": "ay_light_main", "name": "Main Light", "type": "light", "state": true },
-        "night_bulb": { "id": "ay_night_bulb", "name": "Night Lamp", "type": "light", "state": false },
-        "fan_secondary": { "id": "ay_fan_secondary", "name": "Secondary Fan", "type": "fan", "state": false },
-        "centre_light": { "id": "ay_centre_light", "name": "Centre Light", "type": "light", "state": true }
-      }
+      "points": [
+        { "id": "ay1", "num": 1, "name": "FAN (Regulator)", "desc": "Controls Main Fan", "icon": "fa-fan", "type": "fan", "state": false, "hasRegulator": true, "speed": 0 },
+        { "id": "ay2", "num": 2, "name": "LIGHT MAIN", "desc": "Controls Main Light", "icon": "fa-lightbulb", "type": "light", "state": false },
+        { "id": "ay3", "num": 3, "name": "NIGHT BULB", "desc": "Controls Night Lamp", "icon": "fa-star", "type": "light", "state": false },
+        { "id": "ay5", "num": 5, "name": "BROWN FAN", "desc": "Controls Secondary Fan", "icon": "fa-fan", "type": "fan", "state": false },
+        { "id": "ay6", "num": 6, "name": "CENTRE LIGHT", "desc": "Controls Centre Light Socket", "icon": "fa-plug", "type": "light", "state": false }
+      ]
     }
   },
   "water_system": {
-    "levelPercent": 78,
-    "volumeLitres": 780,
+    "levelPercent": 0,
+    "volumeLitres": 0,
     "maxCapacity": 1000,
-    "inflowRate": 18.5,
-    "outflowRate": 4.2,
-    "pH": 7.2,
-    "tdsPpm": 142,
-    "pumpActive": true,
-    "autoMode": true
+    "inflowRate": 0.0,
+    "outflowRate": 0.0,
+    "pH": 0.0,
+    "tdsPpm": 0,
+    "pumpActive": false,
+    "autoMode": false
   },
   "environment": {
-    "temp": 26.5,
-    "humidity": 58,
-    "airQuality": "Good",
-    "aqi": 42,
-    "co2": 420,
-    "powerUsage": 1.45
+    "temp": 0.0,
+    "humidity": 0,
+    "airQuality": "Standby",
+    "aqi": 0,
+    "co2": 0,
+    "powerUsage": 0.0
   },
   "devices": {
     "hall": { "status": "offline", "room": "Hall (Ground Floor)" },

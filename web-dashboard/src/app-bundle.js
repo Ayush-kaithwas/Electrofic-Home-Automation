@@ -38,8 +38,8 @@ const INITIAL_BOARDS = {
     name: "Hall Switchboard",
     floor: "Ground Floor",
     points: [
-      { id: "h1", num: 1, name: "FAN", desc: "Controls Main Hall Fan", icon: "fa-fan", type: "fan", state: true },
-      { id: "h2", num: 2, name: "LIGHT", desc: "Controls Hall Main Light", icon: "fa-lightbulb", type: "light", state: true },
+      { id: "h1", num: 1, name: "FAN", desc: "Controls Main Hall Fan", icon: "fa-fan", type: "fan", state: false },
+      { id: "h2", num: 2, name: "LIGHT", desc: "Controls Hall Main Light", icon: "fa-lightbulb", type: "light", state: false },
       { id: "h4", num: 4, name: "CHANDELIER", desc: "Controls Decorative Chandelier", icon: "fa-gem", type: "chandelier", state: false }
     ]
   },
@@ -48,8 +48,8 @@ const INITIAL_BOARDS = {
     name: "First Floor Room",
     floor: "1st Floor",
     points: [
-      { id: "f2", num: 2, name: "NIGHT BULB", desc: "Controls Night Lamp", icon: "fa-moon", type: "light", state: true, },
-      { id: "f4", num: 4, name: "FAN (Regulator)", desc: "Controls Fan Speed", icon: "fa-fan", type: "fan", state: true, hasRegulator: true, speed: 3 },
+      { id: "f2", num: 2, name: "NIGHT BULB", desc: "Controls Night Lamp", icon: "fa-moon", type: "light", state: false },
+      { id: "f4", num: 4, name: "FAN (Regulator)", desc: "Controls Fan Speed", icon: "fa-fan", type: "fan", state: false, hasRegulator: true, speed: 0 },
       { id: "f5", num: 5, name: "LIGHT", desc: "Controls Room Light", icon: "fa-lightbulb", type: "light", state: false },
       { id: "f6", num: 6, name: "CHANDELIER", desc: "Controls Room Chandelier", icon: "fa-gem", type: "chandelier", state: false }
     ]
@@ -59,10 +59,10 @@ const INITIAL_BOARDS = {
     name: "Harry Room",
     floor: "2nd Floor",
     points: [
-      { id: "hr3", num: 3, name: "NIGHT BULB", desc: "Controls Night Bulb", icon: "fa-moon", type: "light", state: true },
-      { id: "hr4", num: 4, name: "FAN", desc: "Controls Ceiling Fan", icon: "fa-fan", type: "fan", state: true },
-      { id: "hr5", num: 5, name: "LIGHT", desc: "Controls Study Light", icon: "fa-lightbulb", type: "light", state: true },
-      { id: "hr6", num: 6, name: "FAN REGULATOR", desc: "Controls Fan Speed", icon: "fa-sliders", type: "regulator", state: true, hasRegulator: true, speed: 4 }
+      { id: "hr3", num: 3, name: "NIGHT BULB", desc: "Controls Night Bulb", icon: "fa-moon", type: "light", state: false },
+      { id: "hr4", num: 4, name: "FAN", desc: "Controls Ceiling Fan", icon: "fa-fan", type: "fan", state: false },
+      { id: "hr5", num: 5, name: "LIGHT", desc: "Controls Study Light", icon: "fa-lightbulb", type: "light", state: false },
+      { id: "hr6", num: 6, name: "FAN REGULATOR", desc: "Controls Fan Speed", icon: "fa-sliders", type: "regulator", state: false, hasRegulator: true, speed: 0 }
     ]
   },
   mom_dad: {
@@ -70,9 +70,9 @@ const INITIAL_BOARDS = {
     name: "Mom and Dad Room",
     floor: "1st Floor",
     points: [
-      { id: "md2", num: 2, name: "SMART LIGHT", desc: "Controls RGB Smart Light", icon: "fa-wand-magic-sparkles", type: "light", state: true },
+      { id: "md2", num: 2, name: "SMART LIGHT", desc: "Controls RGB Smart Light", icon: "fa-wand-magic-sparkles", type: "light", state: false },
       { id: "md4", num: 4, name: "FAN", desc: "Controls Master Bed Fan", icon: "fa-fan", type: "fan", state: false },
-      { id: "md5", num: 5, name: "LIGHT", desc: "Controls Ambient Light", icon: "fa-lightbulb", type: "light", state: true },
+      { id: "md5", num: 5, name: "LIGHT", desc: "Controls Ambient Light", icon: "fa-lightbulb", type: "light", state: false },
       { id: "md6", num: 6, name: "CHANDELIER", desc: "Controls Chandelier", icon: "fa-gem", type: "chandelier", state: false }
     ]
   },
@@ -81,11 +81,11 @@ const INITIAL_BOARDS = {
     name: "Ayush Room",
     floor: "2nd Floor",
     points: [
-      { id: "ay1", num: 1, name: "FAN (Regulator)", desc: "Controls Main Fan", icon: "fa-fan", type: "fan", state: true, hasRegulator: true, speed: 5 },
-      { id: "ay2", num: 2, name: "LIGHT MAIN", desc: "Controls Main Light", icon: "fa-lightbulb", type: "light", state: true },
+      { id: "ay1", num: 1, name: "FAN (Regulator)", desc: "Controls Main Fan", icon: "fa-fan", type: "fan", state: false, hasRegulator: true, speed: 0 },
+      { id: "ay2", num: 2, name: "LIGHT MAIN", desc: "Controls Main Light", icon: "fa-lightbulb", type: "light", state: false },
       { id: "ay3", num: 3, name: "NIGHT BULB", desc: "Controls Night Lamp", icon: "fa-star", type: "light", state: false },
       { id: "ay5", num: 5, name: "BROWN FAN", desc: "Controls Secondary Fan", icon: "fa-fan", type: "fan", state: false },
-      { id: "ay6", num: 6, name: "CENTRE LIGHT", desc: "Controls Centre Light Socket", icon: "fa-plug", type: "light", state: true }
+      { id: "ay6", num: 6, name: "CENTRE LIGHT", desc: "Controls Centre Light Socket", icon: "fa-plug", type: "light", state: false }
     ]
   }
 };
@@ -777,32 +777,32 @@ function App() {
   const [espNodes, setEspNodes] = useState(INITIAL_ESP_NODES);
 
   const [waterData, setWaterData] = useState({
-    levelPercent: 78,
-    volumeLitres: 780,
+    levelPercent: 0,
+    volumeLitres: 0,
     maxCapacity: 1000,
-    fillingTimeMin: 23,
-    inflowRate: 18.5,
-    unitsConsumed: 2,
-    runtimePerDay: 2,
-    pumpActive: true,
-    autoMode: true
+    fillingTimeMin: 0,
+    inflowRate: 0,
+    unitsConsumed: 0,
+    runtimePerDay: 0,
+    pumpActive: false,
+    autoMode: false
   });
 
   const [envData, setEnvData] = useState({
-    temperature: 24.5,
-    humidity: 58,
-    aqi: 42,
-    pm25: 11,
-    pm10: 26,
-    co2: 425
+    temperature: 0,
+    humidity: 0,
+    aqi: 0,
+    pm25: 0,
+    pm10: 0,
+    co2: 0
   });
 
   const [elecData, setElecData] = useState({
-    liveWatts: 485,
-    todayKwh: 6.4,
-    monthlyKwh: 184.2,
+    liveWatts: 0,
+    todayKwh: 0,
+    monthlyKwh: 0,
     tariffRateRupees: 7.50,
-    hourlyLoad: [220, 180, 150, 140, 190, 310, 520, 680, 480, 510, 490, 485]
+    hourlyLoad: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   });
 
   const [logs, setLogs] = useState([
@@ -912,30 +912,19 @@ function App() {
     }
   }, []);
 
-  // --- TELEMETRY FLUCTUATION (Fallback when idle) ---
+  // --- LIVE REAL-TIME ELECTRICITY LOAD CALCULATION ---
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!fbConnected) {
-        setEnvData(prev => ({
-          ...prev,
-          temperature: +(prev.temperature + (Math.random() * 0.2 - 0.1)).toFixed(1)
-        }));
-      }
+    let activeCount = 0;
+    Object.values(boards).forEach(b => {
+      (b.points || []).forEach(p => { if (p.state && !p.isNull) activeCount++; });
+    });
 
-      let activeCount = 0;
-      Object.values(boards).forEach(b => {
-        b.points.forEach(p => { if (p.state && !p.isNull) activeCount++; });
-      });
-
-      const calculatedWatts = activeCount * 65 + Math.floor(Math.random() * 20);
-      setElecData(prev => ({
-        ...prev,
-        liveWatts: calculatedWatts
-      }));
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [boards, fbConnected]);
+    const calculatedWatts = activeCount * 65;
+    setElecData(prev => ({
+      ...prev,
+      liveWatts: calculatedWatts
+    }));
+  }, [boards]);
 
   // --- ACTIONS WITH FIREBASE WRITE ---
   const handleToggleSwitch = (boardId, pointId) => {
