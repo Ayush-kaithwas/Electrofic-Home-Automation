@@ -31,6 +31,126 @@ try {
   console.warn("Firebase initialization notice:", err.message);
 }
 
+// ===========================================================================
+// LOCAL WEBSOCKET MANAGER
+// Tries to connect to the RPi at ws://[RPI_IP]:8765 first.
+// connMode: 'connecting' | 'local' | 'remote' | 'offline'
+// When LOCAL: all commands go over WebSocket (< 5ms, no internet needed).
+// When REMOTE: commands go to Firebase (existing logic unchanged).
+// Firebase listeners always run in background for remote access.
+// ===========================================================================
+const RPI_IP  = localStorage.getItem("rpi_ip") || "192.168.137.203";
+const WS_URL  = `ws://${RPI_IP}:8765`;
+const WS_CONNECT_TIMEOUT_MS = 3000;   // give up on local after 3s
+const WS_RECONNECT_DELAY_MS = 8000;   // retry local connection every 8s
+
+function useWebSocket({ onStateUpdate, onLog }) {
+  const wsRef        = useRef(null);
+  const modeRef      = useRef('connecting');  // mirrors connMode without re-render lag
+  const reconnTimerRef = useRef(null);
+  const timeoutRef   = useRef(null);
+  const [connMode, setConnMode] = useState('connecting');
+
+  const updateMode = (m) => {
+    modeRef.current = m;
+    setConnMode(m);
+  };
+
+  // Send a raw JSON command — only called when in LOCAL mode
+  const sendWS = (msg) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(msg));
+      return true;
+    }
+    return false;
+  };
+
+  const connect = () => {
+    if (wsRef.current) {
+      try { wsRef.current.close(); } catch (_) {}
+    }
+    clearTimeout(timeoutRef.current);
+    clearTimeout(reconnTimerRef.current);
+
+    console.log('[WS] Trying local connection to', WS_URL);
+    updateMode('connecting');
+
+    let ws;
+    try {
+      ws = new WebSocket(WS_URL);
+    } catch (e) {
+      console.warn('[WS] WebSocket creation failed:', e);
+      updateMode('remote');
+      return;
+    }
+    wsRef.current = ws;
+
+    // If no connection within timeout → fall back to remote (Firebase)
+    timeoutRef.current = setTimeout(() => {
+      if (ws.readyState !== WebSocket.OPEN) {
+        console.warn('[WS] Connection timeout — switching to REMOTE (Firebase) mode');
+        ws.close();
+        updateMode('remote');
+        onLog('No local RPi found. Using cloud (Firebase) mode.', 'info');
+        // Keep retrying in background
+        scheduleReconnect();
+      }
+    }, WS_CONNECT_TIMEOUT_MS);
+
+    ws.onopen = () => {
+      clearTimeout(timeoutRef.current);
+      console.log('[WS] Connected to RPi — LOCAL mode active');
+      updateMode('local');
+      onLog('Connected to RPi via local WebSocket — LOCAL mode active.', 'success');
+    };
+
+    ws.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+        // RPi sends { type: "state", devices: {...}, water_system: {...}, ... }
+        if (msg.type === 'state') {
+          onStateUpdate(msg);
+        }
+      } catch (err) {
+        console.warn('[WS] Bad message:', err);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.warn('[WS] Error:', err);
+    };
+
+    ws.onclose = () => {
+      clearTimeout(timeoutRef.current);
+      if (modeRef.current === 'local') {
+        console.warn('[WS] Lost local connection — falling back to Firebase');
+        onLog('Lost local connection to RPi. Switching to cloud mode...', 'info');
+        updateMode('remote');
+      }
+      scheduleReconnect();
+    };
+  };
+
+  const scheduleReconnect = () => {
+    clearTimeout(reconnTimerRef.current);
+    reconnTimerRef.current = setTimeout(() => {
+      console.log('[WS] Attempting reconnect to local RPi...');
+      connect();
+    }, WS_RECONNECT_DELAY_MS);
+  };
+
+  useEffect(() => {
+    connect();
+    return () => {
+      clearTimeout(timeoutRef.current);
+      clearTimeout(reconnTimerRef.current);
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, []);
+
+  return { connMode, sendWS };
+}
+
 // 1. DATA DEFINITIONS (PDF SWITCHBOARDS)
 const INITIAL_BOARDS = {
   hall: {
@@ -100,9 +220,18 @@ const INITIAL_ESP_NODES = [
 ];
 
 // 2. SIDEBAR COMPONENT
-function Sidebar({ activeTab, setActiveTab, espNodes, fbConnected }) {
+function Sidebar({ activeTab, setActiveTab, espNodes, fbConnected, connMode }) {
   const onlineCount = (espNodes || []).filter(n => n.online).length;
-  const isHwOnline = onlineCount > 0;
+  const isHwOnline  = onlineCount > 0;
+
+  // Connection mode badge config
+  const modeConfig = {
+    local:      { label: 'Local  — RPi Direct',  dot: 'online',   icon: 'fa-house-signal' },
+    remote:     { label: 'Remote — Firebase',     dot: 'online',   icon: 'fa-cloud' },
+    connecting: { label: 'Connecting...',         dot: 'pending',  icon: 'fa-circle-notch fa-spin' },
+    offline:    { label: 'Offline',               dot: 'offline',  icon: 'fa-wifi-slash' },
+  };
+  const mode = modeConfig[connMode] || modeConfig.connecting;
 
   return e("aside", { className: "sidebar" },
     e("div", null,
@@ -129,24 +258,47 @@ function Sidebar({ activeTab, setActiveTab, espNodes, fbConnected }) {
       )
     ),
     e("div", { className: "gateway-status-card" },
+      // Connection mode badge (primary indicator)
       e("div", { className: "status-header" },
-        e("span", { className: `status-dot ${isHwOnline ? 'online' : 'offline'}` }),
-        e("span", { className: "status-title" }, isHwOnline ? "Hardware Active" : "Hardware Standby")
+        e("span", { className: `status-dot ${mode.dot}` }),
+        e("span", { className: "status-title" },
+          e("i", { className: `fa-solid ${mode.icon}`, style: { marginRight: '5px', fontSize: '0.8rem' } }),
+          mode.label
+        )
       ),
-      e("div", { className: "status-sub" }, e("span", null, "ESP Nodes:"), e("strong", null, `${onlineCount}/5 Online`)),
-      e("div", { className: "status-sub" }, e("span", null, "Cloud Sync:"), e("strong", null, fbConnected ? "Firebase Live" : "Local Mode"))
+      // Hardware nodes
+      e("div", { className: "status-sub" },
+        e("span", null, "ESP Nodes:"),
+        e("strong", null, `${onlineCount}/5 Online`)
+      ),
+      // Firebase cloud status
+      e("div", { className: "status-sub" },
+        e("span", null, "Cloud:"),
+        e("strong", null, fbConnected ? "Firebase Live" : (connMode === 'local' ? "LAN Only" : "Offline"))
+      ),
+      // RPi IP (shown only in local mode)
+      connMode === 'local' && e("div", { className: "status-sub", style: { opacity: 0.7, fontSize: '0.72rem' } },
+        e("span", null, "RPi IP:"),
+        e("strong", null, RPI_IP)
+      )
     )
   );
 }
 
 // 3. MOBILE HEADER COMPONENT (PWA-ready — brand + install + logout + status)
-function MobileHeader({ installPromptEvent, onInstallClick, currentUser, onLogout, fbConnected }) {
+function MobileHeader({ installPromptEvent, onInstallClick, currentUser, onLogout, fbConnected, connMode }) {
+  const modeLabel = { local: '⚡ Local', remote: '☁ Remote', connecting: '◌ Connecting', offline: '✕ Offline' };
+  const modeColor = { local: '#22c55e', remote: '#06b6d4', connecting: '#f59e0b', offline: '#ef4444' };
+
   return e("header", { className: "mobile-header" },
     e("div", { className: "mobile-brand" },
       e("div", { className: "mobile-brand-logo" }, e("i", { className: "fa-solid fa-house-signal" })),
       e("div", { className: "mobile-brand-text" },
         e("h2", null, "AuraHome"),
-        e("span", null, "By Electrofic")
+        // Show connection mode inline on mobile header
+        e("span", { style: { color: modeColor[connMode] || '#f59e0b', fontWeight: 600, fontSize: '0.7rem' } },
+          modeLabel[connMode] || '◌ Connecting'
+        )
       )
     ),
     e("div", { className: "mobile-header-right" },
@@ -166,7 +318,10 @@ function MobileHeader({ installPromptEvent, onInstallClick, currentUser, onLogou
       },
         e("i", { className: "fa-solid fa-right-from-bracket" })
       ),
-      e("span", { className: `mobile-status-dot ${fbConnected ? 'online' : ''}`, title: fbConnected ? "Firebase Connected" : "Local Standby" })
+      e("span", {
+        className: `mobile-status-dot ${connMode === 'local' || fbConnected ? 'online' : ''}`,
+        title: connMode === 'local' ? 'Local RPi' : (fbConnected ? 'Firebase Connected' : 'Offline')
+      })
     )
   );
 }
@@ -769,46 +924,31 @@ function App() {
       setShowInstallBanner(false);
     }
   };
-  const [activeTab, setActiveTab] = useState("overview");
+
+  const [activeTab, setActiveTab]       = useState("overview");
   const [selectedFloor, setSelectedFloor] = useState("hall");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [boards, setBoards] = useState(INITIAL_BOARDS);
-
-  const [espNodes, setEspNodes] = useState(INITIAL_ESP_NODES);
+  const [boards, setBoards]             = useState(INITIAL_BOARDS);
+  const [espNodes, setEspNodes]         = useState(INITIAL_ESP_NODES);
 
   const [waterData, setWaterData] = useState({
-    levelPercent: 0,
-    volumeLitres: 0,
-    maxCapacity: 1000,
-    fillingTimeMin: 0,
-    inflowRate: 0,
-    unitsConsumed: 0,
-    runtimePerDay: 0,
-    pumpActive: false,
-    autoMode: false
+    levelPercent: 0, volumeLitres: 0, maxCapacity: 1000,
+    fillingTimeMin: 0, inflowRate: 0, unitsConsumed: 0,
+    runtimePerDay: 0, pumpActive: false, autoMode: false
   });
 
   const [envData, setEnvData] = useState({
-    temperature: 0,
-    humidity: 0,
-    aqi: 0,
-    pm25: 0,
-    pm10: 0,
-    co2: 0
+    temperature: 0, humidity: 0, aqi: 0, pm25: 0, pm10: 0, co2: 0
   });
 
   const [elecData, setElecData] = useState({
-    liveWatts: 0,
-    todayKwh: 0,
-    monthlyKwh: 0,
+    liveWatts: 0, todayKwh: 0, monthlyKwh: 0,
     tariffRateRupees: 7.50,
     hourlyLoad: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   });
 
   const [logs, setLogs] = useState([
-    { id: 1, time: "13:00:15", text: "React App Mounted. AuraHome Engine initialized.", type: "info" },
-    { id: 2, time: "13:00:28", text: "Water Monitoring telemetry connected (Tank Level: 78%).", type: "success" },
-    { id: 3, time: "13:00:45", text: "Synced 5 Floor Switchboards from PDF Specs.", type: "cmd" }
+    { id: 1, time: new Date().toTimeString().split(' ')[0], text: "AuraHome Engine initialized.", type: "info" }
   ]);
 
   const addLog = (text, type = "info") => {
@@ -816,7 +956,82 @@ function App() {
     setLogs(prev => [...prev.slice(-30), { id: Date.now() + Math.random(), time, text, type }]);
   };
 
-  // --- FIREBASE REAL-TIME LISTENERS ---
+  // ── WebSocket state handler ───────────────────────────────────────────────
+  // Called whenever RPi sends a state snapshot over the WebSocket.
+  // Maps RPi's { devices, water_system, environment, electricity } into React state.
+  const handleWsStateUpdate = (msg) => {
+    // 1. ESP node status from devices map
+    if (msg.devices) {
+      const devMap = msg.devices;
+      const nowSec = Math.floor(Date.now() / 1000);
+      setEspNodes(prev => prev.map(node => {
+        const d = devMap[node.id];
+        if (!d) return node;
+        const isOnline = d.status === 'online' &&
+          (!d.last_seen || (nowSec - d.last_seen) < 60);
+        return {
+          ...node,
+          online:   isOnline,
+          ip:       d.ip || '—',
+          rssi:     d.rssi || null,
+          lastSeen: isOnline ? 'Just now' : 'Disconnected'
+        };
+      }));
+
+      // 2. Relay state → switch board points
+      setBoards(prev => {
+        const next = { ...prev };
+        Object.keys(devMap).forEach(nodeId => {
+          const relays = devMap[nodeId].relays;
+          if (!relays || !next[nodeId]) return;
+          next[nodeId] = {
+            ...next[nodeId],
+            points: next[nodeId].points.map(pt => {
+              // Relay key pattern: "ay2", "ay2_light_main", etc. — match by prefix
+              const relayVal = relays[pt.id] !== undefined
+                ? relays[pt.id]
+                : Object.keys(relays).find(k => k.startsWith(pt.id + '_')) !== undefined
+                  ? relays[Object.keys(relays).find(k => k.startsWith(pt.id + '_'))]
+                  : undefined;
+              if (relayVal !== undefined) {
+                return { ...pt, state: Boolean(relayVal) };
+              }
+              return pt;
+            })
+          };
+        });
+        return next;
+      });
+    }
+
+    // 3. Water system
+    if (msg.water_system) {
+      setWaterData(prev => ({ ...prev, ...msg.water_system }));
+    }
+
+    // 4. Environment
+    if (msg.environment) {
+      const env = msg.environment;
+      setEnvData(prev => ({
+        ...prev,
+        temperature: env.temp   !== undefined ? env.temp   : prev.temperature,
+        humidity:    env.humidity !== undefined ? env.humidity : prev.humidity
+      }));
+    }
+
+    // 5. Electricity
+    if (msg.electricity) {
+      setElecData(prev => ({ ...prev, ...msg.electricity }));
+    }
+  };
+
+  // ── Initialise WebSocket manager ──────────────────────────────────────────
+  const { connMode, sendWS } = useWebSocket({
+    onStateUpdate: handleWsStateUpdate,
+    onLog:         addLog
+  });
+
+  // --- FIREBASE REAL-TIME LISTENERS (always active — power remote mode) ---
   useEffect(() => {
     if (firebaseDb) {
       // 1. Connection status
@@ -939,7 +1154,28 @@ function App() {
     }));
   }, [boards]);
 
-  // --- ACTIONS WITH FIREBASE WRITE ---
+  // ── COMMAND ROUTER ────────────────────────────────────────────────────────
+  // In LOCAL mode  → send over WebSocket to RPi (< 5ms)
+  // In REMOTE mode → write to Firebase /commands (RPi listens via SSE)
+  const sendCommand = (msg) => {
+    if (connMode === 'local') {
+      sendWS(msg);
+      return;
+    }
+    // Firebase fallback
+    if (!firebaseDb) return;
+    if (msg.type === 'cmd') {
+      const { type, target, ...payload } = msg;
+      firebaseDb.ref(`commands/${target}`).set({ ...payload, updated_at: Date.now() });
+    } else if (msg.type === 'scene') {
+      firebaseDb.ref('commands/scene').set({ name: msg.name, timestamp: Date.now() });
+    } else if (msg.type === 'pump') {
+      firebaseDb.ref('commands/water_pump').set({ pumpActive: msg.pumpActive, timestamp: Date.now() });
+      firebaseDb.ref('water_system/pumpActive').set(msg.pumpActive);
+    }
+  };
+
+  // --- ACTIONS ---
   const handleToggleSwitch = (boardId, pointId) => {
     setBoards(prev => {
       const board = prev[boardId];
@@ -954,19 +1190,13 @@ function App() {
         return pt;
       });
 
-      // Write directly to Firebase
-      if (firebaseDb && toggledPoint) {
-        // 1. Update board point state in Firebase
-        firebaseDb.ref(`boards/${boardId}/points`).set(updatedPoints);
-        // 2. Write command for Raspberry Pi bridge
-        const cmdKey = toggledPoint.name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        firebaseDb.ref(`commands/${boardId}/${cmdKey}`).set(toggledPoint.state);
-        firebaseDb.ref(`commands/${boardId}/${pointId}`).set({
-          state: toggledPoint.state,
-          speed: toggledPoint.speed || null,
-          name: toggledPoint.name,
-          updated_at: Date.now()
-        });
+      if (toggledPoint) {
+        // Send via WS (local) or Firebase (remote)
+        sendCommand({ type: 'cmd', target: boardId, [pointId]: toggledPoint.state });
+        // Also keep Firebase boards state in sync (for remote access history)
+        if (firebaseDb && connMode !== 'local') {
+          firebaseDb.ref(`boards/${boardId}/points`).set(updatedPoints);
+        }
       }
 
       return { ...prev, [boardId]: { ...board, points: updatedPoints } };
@@ -981,21 +1211,17 @@ function App() {
       const updatedPoints = board.points.map(pt => {
         if (pt.id === pointId) {
           speedPoint = { ...pt, speed };
-          addLog(`${board.name} → ${pt.name} speed set to Level ${speed}`, "cmd");
+          addLog(`${board.name} → ${pt.name} speed → Level ${speed}`, "cmd");
           return speedPoint;
         }
         return pt;
       });
 
-      // Write directly to Firebase
-      if (firebaseDb && speedPoint) {
-        firebaseDb.ref(`boards/${boardId}/points`).set(updatedPoints);
-        firebaseDb.ref(`commands/${boardId}/${pointId}`).set({
-          state: speedPoint.state,
-          speed: speed,
-          name: speedPoint.name,
-          updated_at: Date.now()
-        });
+      if (speedPoint) {
+        sendCommand({ type: 'cmd', target: boardId, [pointId]: speedPoint.state, [`${pointId}_speed`]: speed });
+        if (firebaseDb && connMode !== 'local') {
+          firebaseDb.ref(`boards/${boardId}/points`).set(updatedPoints);
+        }
       }
 
       return { ...prev, [boardId]: { ...board, points: updatedPoints } };
@@ -1003,42 +1229,29 @@ function App() {
   };
 
   const triggerScene = (sceneName) => {
-    addLog(`Automation Scene Triggered: ${sceneName.toUpperCase()}`, "cmd");
+    addLog(`Scene: ${sceneName.toUpperCase()}`, "cmd");
+    // Apply locally to boards state
     setBoards(prev => {
       const newBoards = { ...prev };
       Object.keys(newBoards).forEach(bKey => {
         newBoards[bKey].points = newBoards[bKey].points.map(pt => {
-          if (sceneName === 'all_off') return { ...pt, state: false };
-          if (sceneName === 'night_mode') {
-            return { ...pt, state: pt.name.includes("NIGHT") || pt.name.includes("SMART") };
-          }
+          if (sceneName === 'all_off')    return { ...pt, state: false };
+          if (sceneName === 'all_on')     return { ...pt, state: true };
+          if (sceneName === 'night_mode') return { ...pt, state: pt.name.includes('NIGHT') || pt.name.includes('SMART') };
+          if (sceneName === 'eco_mode')   return { ...pt, state: pt.type === 'light' };
           return pt;
         });
       });
-
-      // Write scene to Firebase
-      if (firebaseDb) {
-        firebaseDb.ref('boards').set(newBoards);
-        firebaseDb.ref('commands/scene').set({
-          name: sceneName,
-          timestamp: Date.now()
-        });
-      }
-
       return newBoards;
     });
+    // Send via WS or Firebase
+    sendCommand({ type: 'scene', name: sceneName });
   };
 
   const handlePumpToggle = (newPumpState) => {
     setWaterData(prev => ({ ...prev, pumpActive: newPumpState }));
     addLog(`Water Motor Pump turned ${newPumpState ? 'ON' : 'OFF'}`, newPumpState ? "success" : "info");
-    if (firebaseDb) {
-      firebaseDb.ref('water_system/pumpActive').set(newPumpState);
-      firebaseDb.ref('commands/water_pump').set({
-        pumpActive: newPumpState,
-        timestamp: Date.now()
-      });
-    }
+    sendCommand({ type: 'pump', pumpActive: newPumpState });
   };
 
   const totalActiveDevices = useMemo(() => {
@@ -1071,9 +1284,9 @@ function App() {
 
   return e("div", { className: "app-container" },
     // Desktop sidebar
-    e(Sidebar, { activeTab, setActiveTab, espNodes, fbConnected }),
+    e(Sidebar, { activeTab, setActiveTab, espNodes, fbConnected, connMode }),
     // Mobile top bar (no hamburger — navigation moved to bottom nav)
-    e(MobileHeader, { installPromptEvent, onInstallClick: handleInstallClick, currentUser, onLogout: handleLogout, fbConnected }),
+    e(MobileHeader, { installPromptEvent, onInstallClick: handleInstallClick, currentUser, onLogout: handleLogout, fbConnected, connMode }),
     // Bottom navigation bar (mobile + tablet only, shown via CSS)
     e(BottomNav, { activeTab, setActiveTab }),
     // Main content

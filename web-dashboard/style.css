@@ -259,6 +259,18 @@ body {
   animation: pulse-dot 2s infinite;
 }
 
+.status-dot.pending {
+  background-color: #f59e0b;
+  box-shadow: 0 0 10px #f59e0b;
+  animation: pulse-dot-amber 1.2s infinite;
+}
+
+@keyframes pulse-dot-amber {
+  0%   { transform: scale(0.9);  box-shadow: 0 0 0 0 rgba(245,158,11,0.7); }
+  70%  { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(245,158,11,0); }
+  100% { transform: scale(0.9);  box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+}
+
 @keyframes pulse-dot {
   0% {
     transform: scale(0.95);
@@ -634,7 +646,7 @@ body {
 }
 
 /* ----------------------------------------------------------------
- * DASHBOARD GRID (Fluid Flexible Layout)
+ * DASHBOARD GRID (Fluid 12-column Desktop & Dynamic Mobile)
  * ---------------------------------------------------------------- */
 .dashboard-grid {
   /* display: grid; */
@@ -827,7 +839,7 @@ body {
 
 .water-details-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-sm);
   flex-grow: 1;
   min-width: 0;

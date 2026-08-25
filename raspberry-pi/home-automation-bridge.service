@@ -1,6 +1,6 @@
 [Unit]
 Description=Raspberry Pi Home Automation MQTT-Firebase Gateway
-After=network.target mosquitto.service
+After=network.target mosquitto.service time-sync.target
 Wants=mosquitto.service
 
 [Service]
