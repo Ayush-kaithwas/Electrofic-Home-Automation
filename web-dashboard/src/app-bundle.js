@@ -1001,16 +1001,27 @@ function App() {
           next[nodeId] = {
             ...next[nodeId],
             points: next[nodeId].points.map(pt => {
-              // Relay key pattern: "ay2", "ay2_light_main", etc. — match by prefix
-              const relayVal = relays[pt.id] !== undefined
-                ? relays[pt.id]
-                : Object.keys(relays).find(k => k.startsWith(pt.id + '_')) !== undefined
-                  ? relays[Object.keys(relays).find(k => k.startsWith(pt.id + '_'))]
-                  : undefined;
-              if (relayVal !== undefined) {
-                return { ...pt, state: Boolean(relayVal) };
+              let newState = pt.state;
+              let newSpeed = pt.speed;
+
+              // 1. Exact match (e.g. ay1: true)
+              if (relays[pt.id] !== undefined) {
+                newState = Boolean(relays[pt.id]);
+              } else {
+                // 2. State key (e.g. ay1_fan_main) -> must NOT include 'speed'
+                const stateKey = Object.keys(relays).find(k => k.startsWith(pt.id + '_') && !k.includes('speed'));
+                if (stateKey) {
+                  newState = Boolean(relays[stateKey]);
+                }
               }
-              return pt;
+
+              // 3. Speed key (e.g. ay1_fan_speed)
+              const speedKey = Object.keys(relays).find(k => k.startsWith(pt.id + '_') && k.includes('speed'));
+              if (speedKey) {
+                newSpeed = parseInt(relays[speedKey], 10);
+              }
+
+              return { ...pt, state: newState, speed: newSpeed !== undefined ? newSpeed : pt.speed };
             })
           };
         });
@@ -1133,15 +1144,24 @@ function App() {
               next[nodeId] = {
                 ...next[nodeId],
                 points: next[nodeId].points.map(pt => {
-                  const relayVal = relays[pt.id] !== undefined
-                    ? relays[pt.id]
-                    : Object.keys(relays).find(k => k.startsWith(pt.id + '_')) !== undefined
-                      ? relays[Object.keys(relays).find(k => k.startsWith(pt.id + '_'))]
-                      : undefined;
-                  if (relayVal !== undefined) {
-                    return { ...pt, state: Boolean(relayVal) };
+                  let newState = pt.state;
+                  let newSpeed = pt.speed;
+
+                  if (relays[pt.id] !== undefined) {
+                    newState = Boolean(relays[pt.id]);
+                  } else {
+                    const stateKey = Object.keys(relays).find(k => k.startsWith(pt.id + '_') && !k.includes('speed'));
+                    if (stateKey) {
+                      newState = Boolean(relays[stateKey]);
+                    }
                   }
-                  return pt;
+
+                  const speedKey = Object.keys(relays).find(k => k.startsWith(pt.id + '_') && k.includes('speed'));
+                  if (speedKey) {
+                    newSpeed = parseInt(relays[speedKey], 10);
+                  }
+
+                  return { ...pt, state: newState, speed: newSpeed !== undefined ? newSpeed : pt.speed };
                 })
               };
             }
