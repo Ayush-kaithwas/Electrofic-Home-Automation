@@ -31,6 +31,7 @@ import os
 import sys
 import time
 import threading
+import concurrent.futures
 try:
     import websockets
     WEBSOCKETS_AVAILABLE = True
@@ -102,6 +103,19 @@ FIREBASE_DATABASE_URL = os.getenv(
 _firebase_ready          = threading.Event()
 _firebase_listener_lock  = threading.Lock()
 _firebase_listener_handle = None   # SSE ListenerRegistration handle (for restart)
+_firebase_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+
+def _async_firebase_write(func, *args, **kwargs):
+    """Offload blocking Firebase calls to a background thread to prevent MQTT freeze."""
+    if not _firebase_ready.is_set():
+        return
+    def wrapper():
+        try:
+            func(*args, **kwargs)
+        except Exception as fe:
+            logging.warning(f"Firebase async write failed: {fe}")
+            _firebase_ready.clear()
+    _firebase_executor.submit(wrapper)
 
 
 # ==============================================================================
@@ -298,11 +312,7 @@ def on_message(client, userdata, msg):
 
                 # Mark online in Firebase if reachable
                 if _firebase_ready.is_set():
-                    try:
-                        db.reference(f"devices/{node_id}/status").set("online")
-                    except Exception as fe:
-                        logging.warning(f"Firebase heartbeat update failed: {fe}")
-                        _firebase_ready.clear()
+                    _async_firebase_write(db.reference(f"devices/{node_id}/status").set, "online")
             return
         # ──────────────────────────────────────────────────────────────────────
 
@@ -313,24 +323,16 @@ def on_message(client, userdata, msg):
         if "water" in topic:
             _broadcast_state({"water_system": data})          # ← local WS (always)
             if fb_enabled:
-                try:
-                    db.reference("water_system").update(data)
-                    logging.info("💧 Updated /water_system in Firebase")
-                except Exception as fe:
-                    logging.warning(f"Firebase write failed (water_system): {fe}")
-                    _firebase_ready.clear()
+                _async_firebase_write(db.reference("water_system").update, data)
+                logging.info("💧 Dispatched /water_system update to Firebase pool")
             return
 
         # 2. Electricity / Energy Telemetry
         if "electricity" in topic or "energy" in topic:
             _broadcast_state({"electricity": data})            # ← local WS (always)
             if fb_enabled:
-                try:
-                    db.reference("electricity").update(data)
-                    logging.info("⚡ Updated /electricity in Firebase")
-                except Exception as fe:
-                    logging.warning(f"Firebase write failed (electricity): {fe}")
-                    _firebase_ready.clear()
+                _async_firebase_write(db.reference("electricity").update, data)
+                logging.info("⚡ Dispatched /electricity update to Firebase pool")
             return
 
         # 3. Node Telemetry (home/nodes/{node_id}/telemetry)
@@ -361,18 +363,14 @@ def on_message(client, userdata, msg):
                 _broadcast_state({"environment": env_update})
 
             if fb_enabled:
-                try:
-                    db.reference(f"devices/{node_id}/telemetry").update(data)
-                    db.reference(f"devices/{node_id}/status").set("online")
+                _async_firebase_write(db.reference(f"devices/{node_id}/telemetry").update, data)
+                _async_firebase_write(db.reference(f"devices/{node_id}/status").set, "online")
 
-                    # Propagate environment readings to Firebase
-                    if env_update:
-                        db.reference("environment").update(env_update)
+                # Propagate environment readings to Firebase
+                if env_update:
+                    _async_firebase_write(db.reference("environment").update, env_update)
 
-                    logging.info(f"⚡ Synced telemetry → Firebase for node: {node_id}")
-                except Exception as fe:
-                    logging.warning(f"Firebase write failed (telemetry/{node_id}): {fe}")
-                    _firebase_ready.clear()
+                logging.info(f"⚡ Dispatched telemetry → Firebase pool for node: {node_id}")
 
     except Exception as e:
         logging.error(f"Error processing MQTT message: {e}")
@@ -512,15 +510,17 @@ def _watchdog_loop():
                 _broadcast_state({"devices": {node_id: {"status": "offline"}}})
                 # Mark offline in Firebase only if currently reachable
                 if _firebase_ready.is_set():
-                    try:
-                        status_ref = db.reference(f"devices/{node_id}/status")
-                        current = status_ref.get()
-                        if current != "offline":
-                            status_ref.set("offline")
-                            logging.warning(f"📴 {node_id} missed heartbeat — marked OFFLINE in Firebase")
-                    except Exception as fe:
-                        logging.warning(f"Watchdog Firebase write failed for {node_id}: {fe}")
-                        _firebase_ready.clear()
+                    def _mark_offline(n_id):
+                        try:
+                            status_ref = db.reference(f"devices/{n_id}/status")
+                            current = status_ref.get()
+                            if current != "offline":
+                                status_ref.set("offline")
+                                logging.warning(f"📴 {n_id} missed heartbeat — marked OFFLINE in Firebase")
+                        except Exception as fe:
+                            logging.warning(f"Watchdog Firebase write failed for {n_id}: {fe}")
+                            _firebase_ready.clear()
+                    _firebase_executor.submit(_mark_offline, node_id)
 
 
 # ==============================================================================
