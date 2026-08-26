@@ -187,9 +187,8 @@ const INITIAL_BOARDS = {
     floor: "2nd Floor",
     points: [
       { id: "hr3", num: 3, name: "NIGHT BULB", desc: "Controls Night Bulb", icon: "fa-moon", type: "light", state: false },
-      { id: "hr4", num: 4, name: "FAN", desc: "Controls Ceiling Fan", icon: "fa-fan", type: "fan", state: false },
-      { id: "hr5", num: 5, name: "LIGHT", desc: "Controls Study Light", icon: "fa-lightbulb", type: "light", state: false },
-      { id: "hr6", num: 6, name: "FAN REGULATOR", desc: "Controls Fan Speed", icon: "fa-sliders", type: "regulator", state: false, hasRegulator: true, speed: 0 }
+      { id: "hr4", num: 4, name: "FAN (Regulator)", desc: "Controls Ceiling Fan", icon: "fa-fan", type: "fan", state: false, hasRegulator: true, speed: 0 },
+      { id: "hr5", num: 5, name: "LIGHT", desc: "Controls Study Light", icon: "fa-lightbulb", type: "light", state: false }
     ]
   },
   mom_dad: {
@@ -1286,7 +1285,7 @@ function App() {
       });
 
       if (speedPoint) {
-        sendCommand({ type: 'cmd', target: boardId, [pointId]: speedPoint.state, [`${pointId}_speed`]: speed });
+        sendCommand({ type: 'cmd', target: boardId, [pointId]: speedPoint.state, [`${pointId}_speed`]: speed, speed: speed });
         if (firebaseDb && connMode !== 'local') {
           firebaseDb.ref(`boards/${boardId}/points`).set(updatedPoints);
         }

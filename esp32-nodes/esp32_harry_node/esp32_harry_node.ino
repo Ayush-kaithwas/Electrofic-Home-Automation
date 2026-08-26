@@ -149,8 +149,8 @@ void publishTelemetry() {
 
   doc["relays"]["hr3_night_bulb"] = stateNightBulb;
   doc["relays"]["hr4_fan"] = stateFan;
+  doc["relays"]["hr4_fan_speed"] = fanSpeed;
   doc["relays"]["hr5_study_light"] = stateStudyLight;
-  doc["relays"]["hr6_fan_speed"] = fanSpeed;
 
   doc["temperature"] = ambientTemp;
   doc["humidity"] = ambientHumidity;
@@ -196,14 +196,12 @@ void handleMqttMessage(char *topic, byte *payload, unsigned int length) {
     }
     if (doc["hr4"].is<bool>() || strcmp(nameStr, "FAN") == 0) {
       stateFan = doc["hr4"].is<bool>() ? doc["hr4"].as<bool>() : doc["state"].as<bool>();
-    }
-    if (doc["hr5"].is<bool>() || strstr(nameStr, "LIGHT")) {
-      stateStudyLight = doc["hr5"].is<bool>() ? doc["hr5"].as<bool>() : doc["state"].as<bool>();
-    }
-    if (doc["hr6"].is<bool>() || strstr(nameStr, "REGULATOR") || doc["speed"].is<int>()) {
       if (doc["speed"].is<int>()) {
         fanSpeed = doc["speed"].as<int>();
       }
+    }
+    if (doc["hr5"].is<bool>() || strstr(nameStr, "LIGHT")) {
+      stateStudyLight = doc["hr5"].is<bool>() ? doc["hr5"].as<bool>() : doc["state"].as<bool>();
     }
   }
 
