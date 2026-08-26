@@ -763,11 +763,19 @@ function QuickScenes({ triggerScene }) {
 
 // 12. ACTIVITY LOG COMPONENT
 function ActivityLog({ logs }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [logs]);
+
   return e("div", { className: "glass-card log-card" },
     e("div", { className: "section-title" },
       e("span", null, e("i", { className: "fa-solid fa-list-check" }), " System Event Log")
     ),
-    e("div", { className: "log-container" },
+    e("div", { className: "log-container", ref: containerRef },
       logs.map(log =>
         e("div", { key: log.id, className: "log-entry" },
           e("span", { className: "log-time" }, `[${log.time}]`), ` ${log.text}`
@@ -1114,6 +1122,33 @@ function App() {
       devicesRef.on('value', (snap) => {
         const data = snap.val() || {};
         const nowSec = Math.floor(Date.now() / 1000);
+        
+        // Sync live telemetry relays to boards in Remote Mode
+        setBoards(prev => {
+          const next = { ...prev };
+          Object.keys(data).forEach(nodeId => {
+            if (data[nodeId] && data[nodeId].telemetry && data[nodeId].telemetry.relays) {
+              const relays = data[nodeId].telemetry.relays;
+              if (!next[nodeId]) return;
+              next[nodeId] = {
+                ...next[nodeId],
+                points: next[nodeId].points.map(pt => {
+                  const relayVal = relays[pt.id] !== undefined
+                    ? relays[pt.id]
+                    : Object.keys(relays).find(k => k.startsWith(pt.id + '_')) !== undefined
+                      ? relays[Object.keys(relays).find(k => k.startsWith(pt.id + '_'))]
+                      : undefined;
+                  if (relayVal !== undefined) {
+                    return { ...pt, state: Boolean(relayVal) };
+                  }
+                  return pt;
+                })
+              };
+            }
+          });
+          return next;
+        });
+
         setEspNodes(prev => {
           return prev.map(node => {
             const fbDev = data[node.id];
