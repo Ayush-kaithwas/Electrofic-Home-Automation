@@ -974,8 +974,7 @@ function App() {
       setEspNodes(prev => prev.map(node => {
         const d = devMap[node.id];
         if (!d) return node;
-        const isOnline = d.status === 'online' &&
-          (!d.last_seen || (nowSec - d.last_seen) < 60);
+        const isOnline = d.status === 'online';
         return {
           ...node,
           online:   isOnline,
@@ -1119,14 +1118,13 @@ function App() {
           return prev.map(node => {
             const fbDev = data[node.id];
             if (fbDev && fbDev.status === 'online') {
-              const lastSeenSec = (fbDev.telemetry && fbDev.telemetry.last_seen) || 0;
-              const isRecent = lastSeenSec > 0 && (nowSec - lastSeenSec) < 60;
+              const isOnline = true;
               return {
                 ...node,
-                online: isRecent,
+                online: isOnline,
                 ip: (fbDev.telemetry && fbDev.telemetry.ip) || "—",
                 rssi: (fbDev.telemetry && fbDev.telemetry.rssi) || null,
-                lastSeen: isRecent ? 'Just now' : (lastSeenSec > 0 ? 'Disconnected' : 'Offline')
+                lastSeen: isOnline ? 'Just now' : 'Disconnected'
               };
             }
             return {
