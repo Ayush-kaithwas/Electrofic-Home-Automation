@@ -30,7 +30,7 @@
 ```
 +--------------------------------------------------------------+
 |              ESP32 Microcontroller Nodes (x5)                |
-|  - Connected to Home Wi-Fi (SSID: LanosK)                   |
+|  - Connected to Home Wi-Fi (SSID: Voldemort)                 |
 |  - Controls Relays (Lights, Fans, Chandeliers)               |
 |  - Reads DHT22 sensors (Temperature & Humidity)              |
 |  - Publishes heartbeat every 3s, telemetry every 8s          |
@@ -141,7 +141,7 @@ Home Automation Project/
 
 | Node ID       | Room                | Floor        | RPi IP (hardcoded in firmware) |
 |---------------|---------------------|--------------|-------------------------------|
-| `ayush`       | Ayush Room          | 2nd Floor    | `192.168.137.203`             |
+| `ayush`       | Ayush Room          | 2nd Floor    | `192.168.137.185`             |
 | `harry`       | Harry Room          | 2nd Floor    | same RPi IP                   |
 | `first_floor` | First Floor Room    | 1st Floor    | same RPi IP                   |
 | `hall`        | Hall                | Ground Floor | same RPi IP                   |
@@ -149,7 +149,7 @@ Home Automation Project/
 
 > **IMPORTANT**: All ESP32 nodes have the Raspberry Pi IP hardcoded as `MQTT_SERVER`.
 > If the RPi's IP changes, ALL firmware files must be updated and reflashed.
-> Home Wi-Fi SSID: `LanosK`
+> Home Wi-Fi SSID: `Voldemort`
 
 ### Ayush Room -- Switch Point Map
 
@@ -497,7 +497,7 @@ Writing `HIGH` to a relay pin turns it OFF. This is a common source of confusion
 
 ### RPi IP Hardcoded in All Firmware
 
-The Raspberry Pi's local IP (`192.168.137.203`) is hardcoded in every `.ino` file as `MQTT_SERVER`.
+The Raspberry Pi's local IP (`192.168.137.185`) is hardcoded in every `.ino` file as `MQTT_SERVER`.
 If the RPi gets a new IP address, every single ESP32 node must be reflashed. Consider setting a
 static DHCP lease for the RPi on your router to prevent this.
 

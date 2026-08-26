@@ -28,10 +28,10 @@
 // ==============================================================================
 // 1. NETWORK & MQTT CONFIGURATION
 // ==============================================================================
-const char *WIFI_SSID = "LanosK";
-const char *WIFI_PASSWORD = "123456789x";
+const char *WIFI_SSID = "Voldemort";
+const char *WIFI_PASSWORD = "password";
 
-const char *MQTT_SERVER = "192.168.137.203"; // Raspberry Pi Gateway IP
+const char *MQTT_SERVER = "192.168.137.185"; // Raspberry Pi Gateway IP
 const int MQTT_PORT = 1883;                  // Mosquitto Broker Port
 const char *NODE_ID = "mom_dad"; // Node identifier matching Firebase
 

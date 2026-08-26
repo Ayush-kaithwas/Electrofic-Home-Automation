@@ -39,7 +39,7 @@ try {
 // When REMOTE: commands go to Firebase (existing logic unchanged).
 // Firebase listeners always run in background for remote access.
 // ===========================================================================
-const RPI_IP  = localStorage.getItem("rpi_ip") || "192.168.137.203";
+const RPI_IP  = localStorage.getItem("rpi_ip") || "192.168.137.185";
 const WS_URL  = `ws://${RPI_IP}:8765`;
 const WS_CONNECT_TIMEOUT_MS = 3000;   // give up on local after 3s
 const WS_RECONNECT_DELAY_MS = 8000;   // retry local connection every 8s
@@ -65,22 +65,27 @@ function useWebSocket({ onStateUpdate, onLog }) {
     return false;
   };
 
-  const connect = () => {
+  const connect = (isBackgroundRetry = false) => {
     if (wsRef.current) {
+      // Avoid triggering onclose when we manually close it for a retry
+      wsRef.current.onclose = null;
       try { wsRef.current.close(); } catch (_) {}
     }
     clearTimeout(timeoutRef.current);
     clearTimeout(reconnTimerRef.current);
 
     console.log('[WS] Trying local connection to', WS_URL);
-    updateMode('connecting');
+    if (!isBackgroundRetry && modeRef.current !== 'remote') {
+      updateMode('connecting');
+    }
 
     let ws;
     try {
       ws = new WebSocket(WS_URL);
     } catch (e) {
       console.warn('[WS] WebSocket creation failed:', e);
-      updateMode('remote');
+      if (modeRef.current !== 'remote') updateMode('remote');
+      scheduleReconnect();
       return;
     }
     wsRef.current = ws;
@@ -89,9 +94,12 @@ function useWebSocket({ onStateUpdate, onLog }) {
     timeoutRef.current = setTimeout(() => {
       if (ws.readyState !== WebSocket.OPEN) {
         console.warn('[WS] Connection timeout — switching to REMOTE (Firebase) mode');
+        ws.onclose = null; // Prevent onclose from firing
         ws.close();
-        updateMode('remote');
-        onLog('No local RPi found. Using cloud (Firebase) mode.', 'info');
+        if (modeRef.current !== 'remote') {
+          updateMode('remote');
+          onLog('No local RPi found. Using cloud (Firebase) mode.', 'info');
+        }
         // Keep retrying in background
         scheduleReconnect();
       }
@@ -100,17 +108,16 @@ function useWebSocket({ onStateUpdate, onLog }) {
     ws.onopen = () => {
       clearTimeout(timeoutRef.current);
       console.log('[WS] Connected to RPi — LOCAL mode active');
-      updateMode('local');
-      onLog('Connected to RPi via local WebSocket — LOCAL mode active.', 'success');
+      if (modeRef.current !== 'local') {
+        updateMode('local');
+        onLog('Connected to RPi via local WebSocket — LOCAL mode active.', 'success');
+      }
     };
 
     ws.onmessage = (evt) => {
       try {
         const msg = JSON.parse(evt.data);
-        // RPi sends { type: "state", devices: {...}, water_system: {...}, ... }
-        if (msg.type === 'state') {
-          onStateUpdate(msg);
-        }
+        if (msg.type === 'state') onStateUpdate(msg);
       } catch (err) {
         console.warn('[WS] Bad message:', err);
       }
@@ -134,8 +141,8 @@ function useWebSocket({ onStateUpdate, onLog }) {
   const scheduleReconnect = () => {
     clearTimeout(reconnTimerRef.current);
     reconnTimerRef.current = setTimeout(() => {
-      console.log('[WS] Attempting reconnect to local RPi...');
-      connect();
+      console.log('[WS] Attempting reconnect to local RPi (silent)...');
+      connect(true);
     }, WS_RECONNECT_DELAY_MS);
   };
 
