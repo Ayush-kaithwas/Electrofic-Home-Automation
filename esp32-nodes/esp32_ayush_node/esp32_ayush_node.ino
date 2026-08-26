@@ -74,7 +74,7 @@ float ambientHumidity = 54.0;
 unsigned long lastTelemetryMillis  = 0;
 unsigned long lastHeartbeatMillis  = 0;
 const unsigned long TELEMETRY_INTERVAL_MS  = 8000;
-const unsigned long HEARTBEAT_INTERVAL_MS  = 3000; // Heartbeat every 2s
+const unsigned long HEARTBEAT_INTERVAL_MS  = 2000; // Heartbeat every 2s
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);

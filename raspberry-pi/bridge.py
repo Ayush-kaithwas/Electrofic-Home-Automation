@@ -67,7 +67,7 @@ KNOWN_NODES = ["ayush", "hall", "first_floor", "harry", "mom_dad"]
 # Protected by a lock since it's written by on_message and read by watchdog thread
 _heartbeat_lock = threading.Lock()
 _last_heartbeat: dict = {}          # { node_id: float (epoch seconds) }
-HEARTBEAT_TIMEOUT_S = 6            # Mark offline after 6 s of silence
+HEARTBEAT_TIMEOUT_S = 10           # Mark offline after 10 s of silence
 WATCHDOG_INTERVAL_S = 3            # Check every 3 s
 FIREBASE_RETRY_S    = 30           # Seconds between Firebase reconnect attempts
 

@@ -1075,7 +1075,15 @@ function App() {
                     return pt;
                   });
                 } else if (Array.isArray(fbBoard.points)) {
-                  updated[bKey].points = fbBoard.points;
+                  // Merge static layout from Firebase but PRESERVE live state from UI/telemetry
+                  updated[bKey].points = fbBoard.points.map(fbPt => {
+                    const existingPt = updated[bKey].points.find(p => p.id === fbPt.id);
+                    return {
+                      ...fbPt,
+                      state: existingPt && existingPt.state !== undefined ? existingPt.state : false,
+                      speed: existingPt && existingPt.speed !== undefined ? existingPt.speed : (fbPt.speed || 0)
+                    };
+                  });
                 }
               }
             });
