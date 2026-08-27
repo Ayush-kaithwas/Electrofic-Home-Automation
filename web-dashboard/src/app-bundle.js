@@ -944,6 +944,7 @@ function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [boards, setBoards]             = useState(INITIAL_BOARDS);
   const [espNodes, setEspNodes]         = useState(INITIAL_ESP_NODES);
+  const optimisticLocks                 = useRef({});
 
   const [waterData, setWaterData] = useState({
     levelPercent: 0, volumeLitres: 0, maxCapacity: 1000,
@@ -1000,6 +1001,9 @@ function App() {
           next[nodeId] = {
             ...next[nodeId],
             points: next[nodeId].points.map(pt => {
+              if (optimisticLocks.current[pt.id] && (Date.now() - optimisticLocks.current[pt.id] < 3000)) {
+                return pt;
+              }
               let newState = pt.state;
               let newSpeed = pt.speed;
 
@@ -1143,6 +1147,9 @@ function App() {
               next[nodeId] = {
                 ...next[nodeId],
                 points: next[nodeId].points.map(pt => {
+                  if (optimisticLocks.current[pt.id] && (Date.now() - optimisticLocks.current[pt.id] < 3000)) {
+                    return pt;
+                  }
                   let newState = pt.state;
                   let newSpeed = pt.speed;
 
@@ -1258,6 +1265,7 @@ function App() {
       });
 
       if (toggledPoint) {
+        optimisticLocks.current[pointId] = Date.now();
         // Send via WS (local) or Firebase (remote)
         sendCommand({ type: 'cmd', target: boardId, [pointId]: toggledPoint.state });
         // Also keep Firebase boards state in sync (for remote access history)
@@ -1285,6 +1293,7 @@ function App() {
       });
 
       if (speedPoint) {
+        optimisticLocks.current[pointId] = Date.now();
         sendCommand({ type: 'cmd', target: boardId, [pointId]: speedPoint.state, [`${pointId}_speed`]: speed, speed: speed });
         if (firebaseDb && connMode !== 'local') {
           firebaseDb.ref(`boards/${boardId}/points`).set(updatedPoints);
@@ -1302,6 +1311,7 @@ function App() {
       const newBoards = { ...prev };
       Object.keys(newBoards).forEach(bKey => {
         newBoards[bKey].points = newBoards[bKey].points.map(pt => {
+          optimisticLocks.current[pt.id] = Date.now();
           if (sceneName === 'all_off')    return { ...pt, state: false };
           if (sceneName === 'all_on')     return { ...pt, state: true };
           if (sceneName === 'night_mode') return { ...pt, state: pt.name.includes('NIGHT') || pt.name.includes('SMART') };
