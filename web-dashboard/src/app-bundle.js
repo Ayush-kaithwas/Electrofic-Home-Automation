@@ -66,6 +66,13 @@ function useWebSocket({ onStateUpdate, onLog }) {
   };
 
   const connect = (isBackgroundRetry = false) => {
+    // Prevent Mixed Content errors: browsers block ws:// on https://
+    if (window.location.protocol === 'https:' && WS_URL.startsWith('ws://')) {
+       console.log('[WS] Disabling local WebSocket in HTTPS mode due to Mixed Content policies. Forcing REMOTE mode.');
+       if (modeRef.current !== 'remote') updateMode('remote');
+       return;
+    }
+
     if (wsRef.current) {
       // Avoid triggering onclose when we manually close it for a retry
       wsRef.current.onclose = null;
