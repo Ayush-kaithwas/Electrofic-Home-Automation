@@ -1211,7 +1211,35 @@ function App() {
           }));
         }
       });
+      });
     }
+  }, []);
+
+  // --- GATEWAY LIVENESS POLLER ---
+  useEffect(() => {
+    if (typeof firebase === 'undefined' || !firebaseDb) return;
+    const systemRef = firebaseDb.ref('system/gateway_last_seen');
+    let lastSeen = Date.now();
+    
+    const onVal = systemRef.on('value', (snap) => {
+      lastSeen = snap.val() || Date.now();
+    });
+
+    const interval = setInterval(() => {
+      const isDead = (Date.now() - lastSeen) > 45000; // 45 seconds timeout
+      if (isDead) {
+        setEspNodes(prev => prev.map(node => ({
+           ...node,
+           online: false,
+           lastSeen: 'Gateway Offline'
+        })));
+      }
+    }, 10000);
+
+    return () => {
+      systemRef.off('value', onVal);
+      clearInterval(interval);
+    };
   }, []);
 
   // --- LIVE REAL-TIME ELECTRICITY LOAD CALCULATION ---

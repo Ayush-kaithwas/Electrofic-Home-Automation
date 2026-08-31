@@ -498,6 +498,17 @@ def _watchdog_loop():
     while True:
         time.sleep(WATCHDOG_INTERVAL_S)
         now = time.time()
+        
+        # Publish Gateway Heartbeat to Firebase
+        if _firebase_ready.is_set():
+            def _update_gateway_heartbeat():
+                try:
+                    db.reference("system/gateway_last_seen").set(int(now * 1000))
+                except Exception as fe:
+                    logging.warning(f"Failed to update gateway heartbeat: {fe}")
+                    _firebase_ready.clear()
+            _firebase_executor.submit(_update_gateway_heartbeat)
+
         with _heartbeat_lock:
             snapshot = dict(_last_heartbeat)
         for node_id in KNOWN_NODES:
