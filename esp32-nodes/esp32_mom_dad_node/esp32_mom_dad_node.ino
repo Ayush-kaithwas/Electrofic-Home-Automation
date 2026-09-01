@@ -112,7 +112,7 @@ void publishTelemetry() {
   JsonDocument doc;
   doc["node_id"] = NODE_ID;
   doc["room"] = "Mom & Dad Room (1st Floor)";
-  doc["ip"] = WiFi.localIP().toString();
+  doc["mac"] = WiFi.macAddress();
   doc["rssi"] = WiFi.RSSI();
   doc["status"] = "online";
   doc["uptime_s"] = millis() / 1000;

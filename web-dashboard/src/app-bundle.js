@@ -225,11 +225,11 @@ const INITIAL_BOARDS = {
 
 // 1b. ESP NODE STATUS (one ESP32 per room — will sync live from Firebase/cloud)
 const INITIAL_ESP_NODES = [
-  { id: "hall", espId: "ESP32-GF-01", name: "Hall Switchboard", floor: "Ground Floor", online: false, ip: "—", lastSeen: "Offline", boardKey: "hall" },
-  { id: "first_floor", espId: "ESP32-FF-01", name: "First Floor Room", floor: "1st Floor", online: false, ip: "—", lastSeen: "Offline", boardKey: "first_floor" },
-  { id: "harry", espId: "ESP32-SF-01", name: "Harry Room", floor: "2nd Floor", online: false, ip: "—", lastSeen: "Offline", boardKey: "harry" },
-  { id: "mom_dad", espId: "ESP32-FF-02", name: "Mom & Dad Room", floor: "1st Floor", online: false, ip: "—", lastSeen: "Offline", boardKey: "mom_dad" },
-  { id: "ayush", espId: "ESP32-SF-02", name: "Ayush Room", floor: "2nd Floor", online: false, ip: "—", lastSeen: "Offline", boardKey: "ayush" },
+  { id: "hall", espId: "ESP32-GF-01", name: "Hall Switchboard", floor: "Ground Floor", online: false, mac: "—", lastSeen: "Offline", boardKey: "hall" },
+  { id: "first_floor", espId: "ESP32-FF-01", name: "First Floor Room", floor: "1st Floor", online: false, mac: "—", lastSeen: "Offline", boardKey: "first_floor" },
+  { id: "harry", espId: "ESP32-SF-01", name: "Harry Room", floor: "2nd Floor", online: false, mac: "—", lastSeen: "Offline", boardKey: "harry" },
+  { id: "mom_dad", espId: "ESP32-FF-02", name: "Mom & Dad Room", floor: "1st Floor", online: false, mac: "—", lastSeen: "Offline", boardKey: "mom_dad" },
+  { id: "ayush", espId: "ESP32-SF-02", name: "Ayush Room", floor: "2nd Floor", online: false, mac: "—", lastSeen: "Offline", boardKey: "ayush" },
 ];
 
 // 2. SIDEBAR COMPONENT
@@ -731,7 +731,7 @@ function ESPStatusBoard({ espNodes, boards, setActiveTab, setSelectedFloor }) {
           e("div", { className: "esp-node-meta" },
             node.online
               ? e(React.Fragment, null,
-                e("span", null, e("i", { className: "fa-solid fa-wifi" }), " ", node.ip),
+                e("span", null, e("i", { className: "fa-solid fa-microchip" }), " ", node.mac),
                 e("span", null, e("i", { className: "fa-solid fa-toggle-on" }), ` ${active}/${total} active`)
               )
               : e(React.Fragment, null,
@@ -993,7 +993,7 @@ function App() {
         return {
           ...node,
           online:   isOnline,
-          ip:       d.ip || '—',
+          mac:      d.mac || '—',
           rssi:     d.rssi || null,
           lastSeen: isOnline ? 'Just now' : 'Disconnected'
         };
@@ -1190,7 +1190,7 @@ function App() {
               return {
                 ...node,
                 online: isOnline,
-                ip: (fbDev.telemetry && fbDev.telemetry.ip) || "—",
+                mac: (fbDev.telemetry && fbDev.telemetry.mac) || "—",
                 rssi: (fbDev.telemetry && fbDev.telemetry.rssi) || null,
                 lastSeen: isOnline ? 'Just now' : 'Disconnected'
               };
@@ -1198,7 +1198,7 @@ function App() {
             return {
               ...node,
               online: false,
-              ip: "—",
+              mac: "—",
               rssi: null,
               lastSeen: 'Offline'
             };
