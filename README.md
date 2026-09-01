@@ -21,8 +21,6 @@ Before anyone can control your home, they must enter the secure Admin Password. 
 
 ### 🎛️ Multi-Floor Switchboards
 This is the heart of the home automation. Each room in your house has its own "Switchboard" card. You can click on any appliance (like a Fan, Light, or Chandelier) to instantly turn it on or off. For fans, there is also a regulator slider to adjust the speed perfectly.
-<br>
-<img src="docs/screenshots/switchboard.png" alt="Switchboard Control" width="500"/>
 
 ### 💧 Smart Water Monitoring & Pump Automation
 Never run out of water again! This widget gives you a live, animated view of exactly how much water is inside your rooftop tank. It tracks the volume in Litres, the fill percentage, and even estimates how many minutes it will take to fill up completely. You can turn the water pump ON/OFF directly from here.
