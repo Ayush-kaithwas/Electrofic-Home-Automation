@@ -8,24 +8,46 @@
 
 **Electrofic** is a modern, real-time Smart Home Automation system featuring a progressive web app (PWA) dashboard, multi-floor switchboard control, IoT sensor telemetry, smart water tank monitoring, and an intelligent Raspberry Pi gateway bridging ESP32 hardware nodes directly with Firebase Realtime Database.
 
----
+![Electrofic Web Dashboard Screenshot](docs/dashboard.png)
 
-## 🌟 Key Features
+## 🌟 Visual Feature Tour
 
-### 🎛️ Multi-Floor Switchboard Control
-- Individual and room-level control across 5 floors (`Ground Floor Hall`, `First Floor`, `Harry's Room`, `Mom & Dad's Room`, and `Ayush's Room`).
-- Real-time relay state toggling with instant visual feedback.
-- Multi-speed fan regulator adjustments.
+Welcome to the Electrofic Home Automation dashboard! This interface was designed to be incredibly easy to use, even if you have no technical background. Here is a quick tour of what you can do:
+
+### 🔒 Secure Admin Login
+Before anyone can control your home, they must enter the secure Admin Password. This ensures that only you and your family have access to your appliances.
+<br>
+<img src="docs/screenshots/login.png" alt="Secure Admin Login Screen" width="350"/>
+
+### 🎛️ Multi-Floor Switchboards
+This is the heart of the home automation. Each room in your house has its own "Switchboard" card. You can click on any appliance (like a Fan, Light, or Chandelier) to instantly turn it on or off. For fans, there is also a regulator slider to adjust the speed perfectly.
+<br>
+<img src="docs/screenshots/switchboard.png" alt="Switchboard Control" width="500"/>
 
 ### 💧 Smart Water Monitoring & Pump Automation
-- Real-time water tank volume & capacity tracking with visual fluid animations.
-- Water quality metrics (TDS and pH monitoring).
-- Automated and manual water pump controls with safety cutoffs.
+Never run out of water again! This widget gives you a live, animated view of exactly how much water is inside your rooftop tank. It tracks the volume in Litres, the fill percentage, and even estimates how many minutes it will take to fill up completely. You can turn the water pump ON/OFF directly from here.
+<br>
+<img src="docs/screenshots/water.png" alt="Smart Water Tank Monitor" width="350"/>
 
-### 🌡️ Climate, Telemetry & Energy Analytics
-- Ambient room temperature, humidity, and motion sensor telemetry.
-- Real-time electricity consumption (Watts) and billing estimations (₹ / kWh).
-- Activity logs and automated quick scenes (e.g., Night Mode, All Off).
+### 🌡️ Climate, Environment & Air Quality
+Curious about the weather inside your house? This widget pulls data from real hardware sensors to show you the live Room Temperature, Humidity, and the overall Air Quality Index (AQI) so you can ensure your family is breathing healthy air.
+<br>
+<img src="docs/screenshots/climate.png" alt="Climate and Air Quality" width="350"/>
+
+### ⚡ Live Electricity Analytics
+Keep an eye on your electricity bill before it arrives! The system tracks exactly how much power your appliances are actively drawing in Watts. It calculates your daily and monthly usage (kWh) and estimates your real-time electricity cost based on your local tariff rates.
+<br>
+<img src="docs/screenshots/electricity.png" alt="Electricity Usage" width="350"/>
+
+### 🪄 Quick Automation Scenes
+Don't want to turn off 15 lights one by one before bed? Automation scenes are magic buttons that trigger multiple actions at once. For example, hitting "Master Power OFF" will instantly shut down every single appliance in the entire house, while "Night Lamp Mode" will turn off all main lights and turn on the soft night bulbs.
+<br>
+<img src="docs/screenshots/scenes.png" alt="Automation Scenes" width="500"/>
+
+### 🛡️ ESP32 Hardware Node Status
+Behind the scenes, your house is powered by tiny microchips called ESP32s hidden inside your walls. This widget acts as a health monitor for your smart home. It shows you exactly which chips are currently online, their secure MAC addresses, and which appliances are active.
+<br>
+<img src="docs/screenshots/esp_status.png" alt="ESP32 Node Status" width="500"/>
 
 ### 📱 Modern Progressive Web App (PWA)
 - **Glassmorphic UI**: Cyber-luminescent dark theme with smooth micro-animations and typography.
