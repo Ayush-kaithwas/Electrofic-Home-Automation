@@ -8,8 +8,6 @@
 
 **Electrofic** is a modern, real-time Smart Home Automation system featuring a progressive web app (PWA) dashboard, multi-floor switchboard control, IoT sensor telemetry, smart water tank monitoring, and an intelligent Raspberry Pi gateway bridging ESP32 hardware nodes directly with Firebase Realtime Database.
 
-![Electrofic Web Dashboard Screenshot](docs/dashboard.png)
-
 ## 🌟 Visual Feature Tour
 
 Welcome to the Electrofic Home Automation dashboard! This interface was designed to be incredibly easy to use, even if you have no technical background. Here is a quick tour of what you can do:
