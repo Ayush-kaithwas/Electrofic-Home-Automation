@@ -30,7 +30,7 @@
 ```
 +--------------------------------------------------------------+
 |              ESP32 Microcontroller Nodes (x5)                |
-|  - Connected to Home Wi-Fi (SSID: Voldemort)                 |
+|  - Connected to Home Wi-Fi (SSID: YOUR_WIFI_SSID)                 |
 |  - Controls Relays (Lights, Fans, Chandeliers)               |
 |  - Reads DHT22 sensors (Temperature & Humidity)              |
 |  - Publishes heartbeat every 3s, telemetry every 8s          |
@@ -149,7 +149,7 @@ Home Automation Project/
 
 > **IMPORTANT**: All ESP32 nodes have the Raspberry Pi IP hardcoded as `MQTT_SERVER`.
 > If the RPi's IP changes, ALL firmware files must be updated and reflashed.
-> Home Wi-Fi SSID: `Voldemort`
+> Home Wi-Fi SSID: `YOUR_WIFI_SSID`
 
 ### Ayush Room -- Switch Point Map
 

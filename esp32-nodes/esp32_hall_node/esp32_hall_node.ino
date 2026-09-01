@@ -18,8 +18,8 @@
 // ==============================================================================
 // 1. NETWORK & MQTT CONFIGURATION
 // ==============================================================================
-const char *WIFI_SSID = "Voldemort";
-const char *WIFI_PASSWORD = "password";
+const char *WIFI_SSID = "YOUR_WIFI_SSID";
+const char *WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
 const char *MQTT_SERVER = "192.168.137.185"; // Raspberry Pi Gateway IP
 const int MQTT_PORT = 1883;                  // Mosquitto Broker Port
