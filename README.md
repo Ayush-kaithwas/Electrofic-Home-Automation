@@ -29,8 +29,14 @@
 
 ### 📱 Modern Progressive Web App (PWA)
 - **Glassmorphic UI**: Cyber-luminescent dark theme with smooth micro-animations and typography.
+- **Optimistic UI Locking**: Eliminates state-bounce glitches caused by telemetry delays for instantaneous user feedback.
 - **Real-time Sync**: Direct Firebase Realtime Database integration for instant synchronization across devices.
 - **Installable PWA**: Works seamlessly on mobile (iOS/Android) and desktop with offline service worker support.
+
+### 🛡️ Distributed Systems Resilience
+- **Gateway LWT (Last Will & Testament)**: The RPi emits a background heartbeat (`gateway_last_seen`). If it crashes, the React UI detects the timeout (45s) and automatically globally locks the interface to prevent stale data.
+- **Asynchronous Cloud Sync**: The Python bridge utilizes a `ThreadPoolExecutor` to completely decouple blocking Firebase REST calls from the core MQTT event loop, ensuring zero latency on local networks even during internet outages.
+- **Deterministic Hardware Addressing**: ESP32 nodes dynamically register themselves via fixed hardware MAC addresses rather than transient local IPs, guaranteeing zero-config stability across router reboots.
 
 ### 🔄 Automated CI/CD
 - Built-in GitHub Actions workflow auto-deploys every commit merged into `main` directly to **Firebase Hosting**.
