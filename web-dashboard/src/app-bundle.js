@@ -1134,7 +1134,12 @@ function App() {
       envRef.on('value', (snap) => {
         const data = snap.val();
         if (data) {
-          setEnvData(prev => ({ ...prev, ...data }));
+          // setEnvData(prev => ({ ...prev, ...data }));
+                    setEnvData(prev => ({ 
+            ...prev, 
+            temperature: data.temp !== undefined ? data.temp : prev.temperature,
+            humidity: data.humidity !== undefined ? data.humidity : prev.humidity 
+          }));
         }
       });
 
